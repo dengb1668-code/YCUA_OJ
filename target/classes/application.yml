@@ -1,0 +1,41 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: oj
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  servlet:
+    multipart:
+      # 测试点 zip 上传限制(Spring 默认 1MB 会拒掉大部分数据包)
+      max-file-size: 10MB
+      max-request-size: 12MB
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/oj?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: 1234   # TODO: 改成你自己的数据库密码
+
+oj:
+  # 测试点数据目录(相对项目根目录): Web 与评测机进程共享, 两者都需从项目根目录启动;
+  # 部署多台评测机时改为共享存储/NFS 路径
+  testdata:
+    dir: ./oj-testdata
+  jwt:
+    # 开发用密钥(HS256 要求至少 32 字节), 生产环境务必更换
+    secret: "oj-shell-dev-secret-key-0123456789-abcdefghijklmnopqrstuvwxyz"
+    expire-hours: 168
+
+mybatis-plus:
+  configuration:
+    # 下划线转驼峰(MP 默认已开启, 显式声明便于阅读)
+    map-underscore-to-camel-case: true
+    # 控制台打印 SQL(仅开发期使用, 生产环境请移除)
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    banner: false
+    db-config:
+      id-type: auto
