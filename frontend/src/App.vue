@@ -150,6 +150,14 @@ a:hover {
   font-weight: bold;
 }
 
+/* 点击按钮/链接后不残留焦点蓝框(悬浮/波纹特效不受影响) */
+.el-button:focus-visible,
+.el-link:focus-visible,
+.el-button:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 /* 悬浮特效: 表格行 hover 上浮 + 高亮 */
 .el-table .el-table__body tr {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
