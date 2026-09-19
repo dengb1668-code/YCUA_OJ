@@ -1,6 +1,6 @@
 <template>
   <div class="login-page">
-    <!-- 队名(学校名已在全局横幅中) -->
+    <VantaBackground bg-color="#ffffff" />
     <div class="school-line">YiChun University Algorithm Team</div>
 
     <!-- HDOJ 风格登录框: 蓝边框 + 蓝条标题 + 白底表单 -->
@@ -66,6 +66,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getCaptcha, login } from '../api/user'
 import { userStore } from '../store/user'
+import VantaBackground from '../components/VantaBackground.vue'
 
 const router = useRouter()
 const loading = ref(false)
@@ -80,7 +81,6 @@ async function refreshCaptcha() {
     captchaImage.value = data.image
     loginForm.captchaCode = ''
   } catch (e) {
-    // request.js 拦截器已统一弹出错误提示
   }
 }
 
@@ -116,9 +116,9 @@ onMounted(refreshCaptcha)
 </script>
 
 <style scoped>
-/* HDOJ(杭电 OJ)风格登录页: 全局横幅之下 + 蓝边框卡片 */
+/* HDOJ(杭电 OJ)风格登录页: 飞鸟特效背景 + 蓝边框卡片 */
 .login-page {
-  background: #fff;
+  background: transparent;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -141,6 +141,12 @@ onMounted(refreshCaptcha)
   background: #fff;
   border: 1px solid #1a5cc8;
   box-sizing: border-box;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.login-frame:hover, .register-frame:hover, .forgot-frame:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(26, 92, 200, 0.15);
 }
 
 .frame-title {

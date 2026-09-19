@@ -35,7 +35,6 @@ async function handleCreate(payload) {
       router.push(`/problems/${id}`)
     }
   } catch (e) {
-    // request.js 拦截器已统一提示
   } finally {
     submitting.value = false
   }
@@ -48,7 +47,7 @@ async function handleCreate(payload) {
 }
 
 .container {
-  max-width: 860px;
+  max-width: 1280px;
   margin: 0 auto;
   padding: 24px 16px 80px;
 }

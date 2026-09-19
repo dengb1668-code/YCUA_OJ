@@ -31,6 +31,13 @@
             题解
           </el-button>
           <el-button
+            size="small"
+            plain
+            @click="router.push(`/problems/${problemId}/submissions`)"
+          >
+            提交记录
+          </el-button>
+          <el-button
             v-if="problem.canManage"
             size="small"
             plain
@@ -39,6 +46,14 @@
             管理题目{{ problem.testCaseCount ? ` (${problem.testCaseCount} 个测试点)` : '' }}
           </el-button>
         </div>
+      </div>
+
+      <!-- 比赛提交模式横幅 -->
+      <div v-if="contestId" class="contest-banner">
+        比赛提交模式: 本页提交将计入比赛 #{{ contestId }}
+        <el-link type="primary" class="banner-link" @click="router.push(`/contests/${contestId}`)">
+          返回比赛
+        </el-link>
       </div>
 
       <!-- 题面 -->
@@ -192,10 +207,16 @@ import { getProblemDetail } from '../api/problem'
 import { customTest, getSubmission, submitCode } from '../api/submission'
 import { ratingColor } from '../utils/rating'
 import { renderMarkdown } from '../utils/markdown'
+import { verdictOf } from '../utils/verdict'
+import { getContestDetail } from '../api/contest'
+import { getContestToken } from '../utils/contestToken'
 
 const route = useRoute()
 const router = useRouter()
 const problemId = Number(route.params.id)
+
+// 比赛提交模式: /problems/:id?contest=比赛ID
+const contestId = ref(null)
 
 const loading = ref(false)
 const problem = ref(null)
@@ -257,22 +278,7 @@ const TERMINAL_STATUSES = [
   'RUNTIME_ERROR', 'COMPILE_ERROR', 'SYSTEM_ERROR'
 ]
 
-// AtCoder 式判定展示: 简称 + 全称 + 颜色
-const verdictMap = {
-  ACCEPTED: { short: 'AC', label: 'Accepted', color: '#5cb85c' },
-  WRONG_ANSWER: { short: 'WA', label: 'Wrong Answer', color: '#f0ad4e' },
-  TIME_LIMIT_EXCEEDED: { short: 'TLE', label: 'Time Limit Exceeded', color: '#e67e22' },
-  MEMORY_LIMIT_EXCEEDED: { short: 'MLE', label: 'Memory Limit Exceeded', color: '#e67e22' },
-  RUNTIME_ERROR: { short: 'RE', label: 'Runtime Error', color: '#d9534f' },
-  COMPILE_ERROR: { short: 'CE', label: 'Compile Error', color: '#999' },
-  SYSTEM_ERROR: { short: 'SE', label: 'System Error', color: '#d9534f' },
-  PENDING: { short: 'Pending', label: '等待判题', color: '#999' },
-  JUDGING: { short: 'Judging', label: '判题中', color: '#999' }
-}
-
-function verdictOf(status) {
-  return verdictMap[status] ?? { short: status, label: status, color: '#999' }
-}
+// AtCoder 式判定展示(共用 utils/verdict.js)
 
 // 判题结果弹窗状态
 const resultVisible = ref(false)
@@ -300,9 +306,24 @@ async function fetchDetail() {
   try {
     problem.value = await getProblemDetail(problemId)
   } catch (e) {
-    // request.js 拦截器已统一弹出错误提示
   } finally {
     loading.value = false
+  }
+}
+
+// 检测比赛上下文: 有 contest 参数且持有有效访问 token 才进入比赛提交模式
+async function setupContestMode() {
+  const cidRaw = route.query.contest
+  if (!cidRaw) return
+  const cid = Number(cidRaw)
+  if (!Number.isInteger(cid) || cid <= 0) return
+  const token = getContestToken(cid)
+  if (!token) return
+  try {
+    await getContestDetail(cid, token)
+    contestId.value = cid
+  } catch (e) {
+    // 无权限或比赛不存在, 按普通模式处理
   }
 }
 
@@ -313,12 +334,16 @@ async function handleSubmit() {
   }
   submitting.value = true
   try {
-    // userId 由后端从登录令牌解析, 前端不再传
-    const submissionId = await submitCode({
-      problemId,
-      language: language.value,
-      code: code.value
-    })
+    // userId 由后端从登录令牌解析, 前端不再传; 比赛模式带 contestId 与访问 token
+    const submissionId = await submitCode(
+      {
+        problemId,
+        contestId: contestId.value ?? undefined,
+        language: language.value,
+        code: code.value
+      },
+      contestId.value ? getContestToken(contestId.value) : ''
+    )
     judging.value = true
     ElMessage.success(`提交成功(提交ID: ${submissionId}), 正在判题...`)
     const result = await pollResult(submissionId)
@@ -333,7 +358,6 @@ async function handleSubmit() {
     }
   } catch (e) {
     judging.value = false
-    // request.js 拦截器已统一弹出错误提示
   } finally {
     submitting.value = false
   }
@@ -381,13 +405,15 @@ async function handleCustomTest() {
       input: testInput.value
     })
   } catch (e) {
-    // request.js 拦截器已统一弹出错误提示
   } finally {
     testing.value = false
   }
 }
 
-onMounted(fetchDetail)
+onMounted(() => {
+  fetchDetail()
+  setupContestMode()
+})
 </script>
 
 <style scoped>
@@ -437,12 +463,30 @@ onMounted(fetchDetail)
   color: #333;
 }
 
-/* 讨论/题解/管理按钮组贴右侧 */
+/* 讨论/题解/提交记录/管理按钮组贴右侧 */
 .limits-actions {
   margin-left: auto;
   display: flex;
   gap: 8px;
   align-items: center;
+}
+
+/* 比赛提交模式横幅 */
+.contest-banner {
+  margin: -14px 0 20px;
+  padding: 8px 14px;
+  background: #f5f9ff;
+  border-left: 3px solid #1a5cc8;
+  border-radius: 0 4px 4px 0;
+  color: #333;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.banner-link {
+  font-size: 13px;
 }
 
 /* 章节标题: 底部细线 */

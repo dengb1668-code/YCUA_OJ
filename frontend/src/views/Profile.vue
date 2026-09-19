@@ -126,7 +126,6 @@ onMounted(async () => {
   try {
     stats.value = await getMyStats()
   } catch (e) {
-    // request.js 拦截器已统一提示
   }
 })
 

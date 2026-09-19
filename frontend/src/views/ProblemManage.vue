@@ -113,6 +113,15 @@
           </el-table-column>
         </el-table>
       </div>
+
+      <!-- 危险操作 -->
+      <div class="manage-section">
+        <h3 class="section-h">危险操作</h3>
+        <el-button type="danger" plain @click="handleDeleteProblem">删除题目</el-button>
+        <div class="danger-hint">
+          删除将同时清除该题的全部提交记录、讨论/题解与测试点数据, 不可恢复; 被比赛引用的题目无法删除
+        </div>
+      </div>
     </div>
 
     <!-- 添加测试点对话框 -->
@@ -166,6 +175,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import ProblemForm from '../components/ProblemForm.vue'
 import {
   addTestCase,
+  deleteProblem,
   deleteTestCase,
   getProblemDetail,
   getTestCase,
@@ -218,7 +228,6 @@ async function fetchAll() {
     }
     cases.value = (await getTestCases(problemId)).map((c) => ({ ...c, _dirty: false }))
   } catch (e) {
-    // request.js 拦截器已统一提示
   } finally {
     loading.value = false
   }
@@ -232,9 +241,27 @@ async function handleUpdateProblem(payload) {
     ElMessage.success('题面已保存')
     await fetchAll()
   } catch (e) {
-    // request.js 拦截器已统一提示
   } finally {
     savingProblem.value = false
+  }
+}
+
+// ---- 删除题目 ----
+async function handleDeleteProblem() {
+  try {
+    await ElMessageBox.confirm(
+      `确定删除题目「${problem.value.title}」? 该题的全部提交记录、讨论/题解与测试点将被清除, 不可恢复!`,
+      '删除题目',
+      { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' }
+    )
+  } catch (e) {
+    return
+  }
+  try {
+    await deleteProblem(problemId)
+    ElMessage.success('题目已删除')
+    router.push('/problems')
+  } catch (e) {
   }
 }
 
@@ -262,7 +289,6 @@ async function handleAdd() {
     addVisible.value = false
     await fetchAll()
   } catch (e) {
-    // request.js 拦截器已统一提示
   } finally {
     saving.value = false
   }
@@ -276,7 +302,6 @@ async function openEdit(row) {
     editForm.output = content.output
     editVisible.value = true
   } catch (e) {
-    // request.js 拦截器已统一提示
   }
 }
 
@@ -291,7 +316,6 @@ async function handleEditSave() {
     editVisible.value = false
     await fetchAll()
   } catch (e) {
-    // request.js 拦截器已统一提示
   } finally {
     saving.value = false
   }
@@ -310,7 +334,6 @@ async function handleSaveConfigs() {
     ElMessage.success(`已保存 ${dirty.length} 个测试点配置`)
     await fetchAll()
   } catch (e) {
-    // request.js 拦截器已统一提示
   }
 }
 
@@ -329,7 +352,6 @@ async function handleDelete(row) {
     ElMessage.success('已删除')
     await fetchAll()
   } catch (e) {
-    // request.js 拦截器已统一提示
   }
 }
 
@@ -362,7 +384,6 @@ async function handleUpload() {
     uploadRef.value?.clearFiles()
     await fetchAll()
   } catch (e) {
-    // request.js 拦截器已统一提示
   }
 }
 
@@ -376,7 +397,7 @@ onMounted(fetchAll)
 }
 
 .container {
-  max-width: 960px;
+  max-width: 1280px;
   margin: 0 auto;
   padding: 16px 16px 80px;
 }
@@ -394,6 +415,12 @@ onMounted(fetchAll)
 
 .manage-section {
   margin-bottom: 36px;
+}
+
+.danger-hint {
+  margin-top: 8px;
+  color: #999;
+  font-size: 13px;
 }
 
 .section-h {

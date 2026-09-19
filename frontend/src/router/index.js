@@ -13,6 +13,10 @@ import ProblemDiscussion from '../views/ProblemDiscussion.vue'
 import ProblemSolution from '../views/ProblemSolution.vue'
 import PostDetail from '../views/PostDetail.vue'
 import UserManage from '../views/UserManage.vue'
+import ProblemSubmissions from '../views/ProblemSubmissions.vue'
+import ContestList from '../views/ContestList.vue'
+import ContestCreate from '../views/ContestCreate.vue'
+import ContestDetail from '../views/ContestDetail.vue'
 import { userStore } from '../store/user'
 
 const routes = [
@@ -68,6 +72,12 @@ const routes = [
     meta: { title: '题目管理' }
   },
   {
+    path: '/problems/:id/submissions',
+    name: 'ProblemSubmissions',
+    component: ProblemSubmissions,
+    meta: { title: '题目提交记录' }
+  },
+  {
     path: '/problems/:id',
     name: 'ProblemDetail',
     component: ProblemDetail,
@@ -102,6 +112,25 @@ const routes = [
     name: 'UserManage',
     component: UserManage,
     meta: { title: '用户管理', requiresOwner: true }
+  },
+  {
+    path: '/contests',
+    name: 'ContestList',
+    component: ContestList,
+    meta: { title: '比赛' }
+  },
+  // 注意: /contests/create 必须放在 /contests/:id 之前
+  {
+    path: '/contests/create',
+    name: 'ContestCreate',
+    component: ContestCreate,
+    meta: { title: '创建比赛' }
+  },
+  {
+    path: '/contests/:id',
+    name: 'ContestDetail',
+    component: ContestDetail,
+    meta: { title: '比赛详情' }
   }
 ]
 

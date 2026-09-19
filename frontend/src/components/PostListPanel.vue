@@ -141,7 +141,6 @@ async function handleCreate() {
     pageNum.value = 1
     fetchList()
   } catch (e) {
-    // request.js 拦截器已统一弹出错误提示
   } finally {
     creating.value = false
   }
@@ -164,7 +163,6 @@ async function fetchList() {
     posts.value = data.records
     total.value = data.total
   } catch (e) {
-    // request.js 拦截器已统一弹出错误提示
   } finally {
     loading.value = false
   }

@@ -2,7 +2,18 @@
   <div class="problem-list">
     <div class="page-head">
       <h2>题目列表</h2>
-      <el-button type="primary" plain @click="router.push('/problems/create')">创建题目</el-button>
+      <div class="head-actions">
+        <el-input
+          v-model="keyword"
+          placeholder="按标题搜索"
+          clearable
+          style="width: 220px"
+          @keyup.enter="handleSearch"
+          @clear="handleSearch"
+        />
+        <el-button plain @click="handleSearch">搜索</el-button>
+        <el-button type="primary" plain @click="router.push('/problems/create')">创建题目</el-button>
+      </div>
     </div>
 
     <el-table v-loading="loading" :data="problems">
@@ -60,6 +71,7 @@ const problems = ref([])
 const total = ref(0)
 const pageNum = ref(1)
 const pageSize = ref(10)
+const keyword = ref('')
 
 // 后端 ProblemStatus 枚举名 -> 展示文案与文字颜色(AtCoder 风格)
 const statusMap = {
@@ -81,18 +93,22 @@ function goDetail(id) {
   router.push(`/problems/${id}`)
 }
 
+function handleSearch() {
+  pageNum.value = 1
+  fetchList()
+}
+
 async function fetchList() {
   loading.value = true
   try {
-    // userId 由后端从登录令牌解析, 前端不再传
     const data = await getProblemPage({
       pageNum: pageNum.value,
-      pageSize: pageSize.value
+      pageSize: pageSize.value,
+      keyword: keyword.value.trim()
     })
     problems.value = data.records
     total.value = data.total
   } catch (e) {
-    // request.js 拦截器已统一弹出错误提示
   } finally {
     loading.value = false
   }
@@ -113,6 +129,12 @@ onMounted(fetchList)
   align-items: center;
   justify-content: space-between;
   margin-bottom: 16px;
+}
+
+.head-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 .problem-list h2 {

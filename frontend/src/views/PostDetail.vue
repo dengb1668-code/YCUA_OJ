@@ -126,7 +126,6 @@ async function fetchDetail() {
   try {
     post.value = await getPostDetail(postId)
   } catch (e) {
-    // request.js 拦截器已统一弹出错误提示
   } finally {
     loading.value = false
   }
@@ -150,7 +149,6 @@ async function handleSave() {
     editVisible.value = false
     fetchDetail()
   } catch (e) {
-    // request.js 拦截器已统一弹出错误提示
   } finally {
     saving.value = false
   }
@@ -171,7 +169,6 @@ async function handleDelete() {
     ElMessage.success('已删除')
     router.back()
   } catch (e) {
-    // request.js 拦截器已统一弹出错误提示
   }
 }
 
@@ -190,7 +187,6 @@ async function handleDeleteReply(replyId) {
     ElMessage.success('已删除')
     fetchDetail()
   } catch (e) {
-    // request.js 拦截器已统一弹出错误提示
   }
 }
 
@@ -206,7 +202,6 @@ async function handleReply() {
     replyContent.value = ''
     fetchDetail()
   } catch (e) {
-    // request.js 拦截器已统一弹出错误提示
   } finally {
     replying.value = false
   }

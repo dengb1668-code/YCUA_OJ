@@ -6,11 +6,13 @@ import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.oj.common.NicknameUtil;
 import com.oj.common.UserContext;
 import com.oj.dto.SubmitRequest;
+import com.oj.entity.ContestProblem;
 import com.oj.entity.Problem;
 import com.oj.entity.Submission;
 import com.oj.entity.User;
 import com.oj.enums.JudgeStatus;
 import com.oj.judge.JudgeQueue;
+import com.oj.mapper.ContestProblemMapper;
 import com.oj.mapper.ProblemMapper;
 import com.oj.mapper.SubmissionMapper;
 import com.oj.mapper.UserMapper;
@@ -37,6 +39,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper, Submiss
     private final UserMapper userMapper;
     private final PermissionService permissionService;
     private final ContestService contestService;
+    private final ContestProblemMapper contestProblemMapper;
 
     @Override
     public Long submit(SubmitRequest request, String contestToken) {
@@ -67,20 +70,21 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper, Submiss
 
     @Override
     public Page<SubmissionListVO> pageMySubmissions(long pageNum, long pageSize) {
-        return pageSubmissions("mine", null, null, pageNum, pageSize);
+        return pageSubmissions("mine", null, null, null, pageNum, pageSize);
     }
 
     @Override
-    public Page<SubmissionListVO> pageSubmissions(String scope, Long problemId, JudgeStatus status,
+    public Page<SubmissionListVO> pageSubmissions(String scope, Long problemId, Long contestId, JudgeStatus status,
                                                   long pageNum, long pageSize) {
         boolean mine = !"all".equals(scope);
-        if (!mine && problemId == null) {
-            throw new IllegalArgumentException("全站提交查询必须指定题目");
+        if (!mine && problemId == null && contestId == null) {
+            throw new IllegalArgumentException("全站提交查询必须指定题目或比赛");
         }
         Long currentUserId = UserContext.getUserId();
         Page<Submission> page = lambdaQuery()
                 .eq(mine, Submission::getUserId, currentUserId)
                 .eq(problemId != null, Submission::getProblemId, problemId)
+                .eq(contestId != null, Submission::getContestId, contestId)
                 .eq(status != null, Submission::getStatus, status)
                 .orderByDesc(Submission::getId)
                 .page(new Page<>(pageNum, pageSize));
@@ -106,15 +110,30 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper, Submiss
                 : userMapper.selectBatchIds(userIds).stream()
                         .collect(Collectors.toMap(User::getId, NicknameUtil::nicknameOf));
 
-        // 代码查看权限: 管理端全放行; scope=mine 全是本人; scope=all 看是否对该题已 AC
+        // 比赛内题号(displayId): 比赛过滤时按 problemId 映射
+        Map<Long, String> displayIdMap = (contestId != null && !problemIds.isEmpty())
+                ? contestProblemMapper.selectList(new LambdaQueryWrapper<ContestProblem>()
+                        .eq(ContestProblem::getContestId, contestId)
+                        .in(ContestProblem::getProblemId, problemIds))
+                        .stream()
+                        .collect(Collectors.toMap(ContestProblem::getProblemId, ContestProblem::getDisplayId))
+                : Map.of();
+
+        // 代码查看权限: 管理端全放行; scope=mine 全是本人; scope=all 看是否对相应题已 AC
         boolean manager = permissionService.isCurrentManager();
-        boolean solvedThisProblem = false;
+        Map<Long, Boolean> solvedMap = new java.util.HashMap<>();
         if (!mine && !manager) {
-            solvedThisProblem = lambdaQuery()
-                    .eq(Submission::getUserId, currentUserId)
-                    .eq(Submission::getProblemId, problemId)
-                    .eq(Submission::getStatus, JudgeStatus.ACCEPTED)
-                    .count() > 0;
+            for (Submission s : page.getRecords()) {
+                if (solvedMap.containsKey(s.getProblemId())) {
+                    continue;
+                }
+                boolean solved = lambdaQuery()
+                        .eq(Submission::getUserId, currentUserId)
+                        .eq(Submission::getProblemId, s.getProblemId())
+                        .eq(Submission::getStatus, JudgeStatus.ACCEPTED)
+                        .count() > 0;
+                solvedMap.put(s.getProblemId(), solved);
+            }
         }
 
         Page<SubmissionListVO> voPage = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
@@ -124,10 +143,11 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper, Submiss
             vo.setProblemId(s.getProblemId());
             vo.setProblemTitle(titleMap.get(s.getProblemId()));
             vo.setContestId(s.getContestId());
+            vo.setDisplayId(displayIdMap.get(s.getProblemId()));
             vo.setUserId(s.getUserId());
             vo.setUsername(nameMap.get(s.getUserId()));
             boolean own = s.getUserId().equals(currentUserId);
-            vo.setCanViewCode(own || manager || solvedThisProblem);
+            vo.setCanViewCode(own || manager || Boolean.TRUE.equals(solvedMap.get(s.getProblemId())));
             vo.setLanguage(s.getLanguage());
             vo.setStatus(s.getStatus());
             vo.setScore(s.getScore());

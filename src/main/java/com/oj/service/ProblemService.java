@@ -30,4 +30,11 @@ public interface ProblemService extends IService<Problem> {
     /**
      * 编辑题目题面(仅创建者/管理员/旧题宽松), 无权限或不存在时抛出 IllegalArgumentException
      */
-    void updatePr
+    void updateProblem(Long id, ProblemCreateRequest request);
+
+    /**
+     * 删除题目(创建者或管理端; 被比赛引用的题目不可删):
+     * 级联删除提交记录、帖子与回复、测试点文件
+     */
+    void deleteProblem(Long id);
+}

@@ -2,25 +2,29 @@ import request from './request'
 
 /**
  * 提交代码
- * @param {Object} data { problemId, language, code, userId }
+ * @param {Object} data { problemId, contestId, language, code }
+ * @param {String} contestToken 比赛内提交必传(X-Contest-Token 头)
  * @returns 提交记录ID
  */
-export function submitCode(data) {
+export function submitCode(data, contestToken) {
+  if (contestToken) {
+    return request.post('/submission', data, { headers: { 'X-Contest-Token': contestToken } })
+  }
   return request.post('/submission', data)
 }
 
 /**
- * 查询提交记录(提交后轮询判题结果)
+ * 查询提交记录(提交后轮询判题结果; 无代码查看权时 code 为 null)
  */
 export function getSubmission(id) {
   return request.get(`/submission/${id}`)
 }
 
 /**
- * 分页获取当前用户的提交记录
- * @param {Object} params { pageNum, pageSize }
+ * 分页获取提交记录
+ * @param {Object} params { scope: 'mine'|'all', problemId, status, pageNum, pageSize }
  */
-export function getMySubmissions(params) {
+export function getSubmissions(params) {
   return request.get('/submission/page', { params })
 }
 

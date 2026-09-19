@@ -28,6 +28,7 @@
           <!-- ICPC 导航 logo(白底片衬托, 仿 HDOJ logo 位) -->
           <img src="./assets/icpc-logo-nav.png" class="menu-icpc-logo" alt="ICPC" />
           <router-link to="/problems" class="menu-link">题目列表</router-link>
+          <router-link to="/contests" class="menu-link">比赛</router-link>
           <router-link to="/submissions" class="menu-link">提交记录</router-link>
           <router-link to="/profile" class="menu-link">个人主页</router-link>
           <router-link to="/discussion" class="menu-link">讨论区</router-link>
@@ -68,12 +69,15 @@
       </nav>
     </header>
     <router-view />
+    <!-- 全局点击特效: 水滴落地 + 涟漪 -->
+    <ClickRipple />
   </div>
 </template>
 
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
 import { userStore } from './store/user'
+import ClickRipple from './components/ClickRipple.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -144,6 +148,21 @@ a:hover {
   background: #1a5cc8 !important;
   color: #fff !important;
   font-weight: bold;
+}
+
+/* 悬浮特效: 表格行 hover 上浮 + 高亮 */
+.el-table .el-table__body tr {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.el-table .el-table__body tr:hover {
+  transform: translateY(-2px);
+  position: relative;
+  z-index: 1;
+}
+
+.el-table .el-table__body tr:hover > td.el-table__cell {
+  background: #eef4ff !important;
 }
 
 /* ============ HDOJ 头部: 蓝边框 + 航拍横幅 + 蓝菜单条 ============ */
@@ -303,6 +322,8 @@ a:hover {
   line-height: 34px;
   padding: 0 14px;
   display: inline-block;
+  position: relative;
+  transition: transform 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
 }
 
 .app .menu-link:hover,
@@ -310,6 +331,34 @@ a:hover {
   background: #154aa0;
   text-decoration: none;
   color: #fff;
+}
+
+/* 悬浮特效: 菜单项轻微上浮 + 底部亮蓝下划线动画 */
+.app .menu-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+}
+
+.app .menu-link::after {
+  content: '';
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 2px;
+  height: 2px;
+  background: #4da3ff;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.25s ease;
+}
+
+.app .menu-link:hover::after,
+.app .menu-link.router-link-active::after {
+  transform: scaleX(1);
+}
+
+.app .menu-oj::after {
+  display: none;
 }
 
 .app .menu-dropdown {

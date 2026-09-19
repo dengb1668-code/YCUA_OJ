@@ -21,6 +21,9 @@ public class SubmissionListVO {
     /** 所属比赛ID(NULL=非比赛提交) */
     private Long contestId;
 
+    /** 比赛内题号(如 A; 仅比赛提交有) */
+    private String displayId;
+
     /** 提交用户ID */
     private Long userId;
 

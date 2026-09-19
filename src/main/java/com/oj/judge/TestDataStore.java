@@ -309,6 +309,19 @@ public class TestDataStore {
         writeMeta(problemId, metas);
     }
 
+    /** 删除某题全部测试点文件(整题删除时用); 目录不存在时静默 */
+    public void deleteAll(Long problemId) throws IOException {
+        Path dir = problemDir(problemId);
+        if (!Files.isDirectory(dir)) {
+            return;
+        }
+        try (Stream<Path> walk = Files.walk(dir)) {
+            for (Path p : walk.sorted(java.util.Comparator.reverseOrder()).toList()) {
+                deleteWithRetry(p);
+            }
+        }
+    }
+
     /** 删除某个测试点: 文件与配置一起重编号前移 */
     public void deleteCase(Long problemId, int index) throws IOException {
         requireIndex(problemId, index);

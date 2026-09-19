@@ -24,10 +24,10 @@ public interface SubmissionService extends IService<Submission> {
     Page<SubmissionListVO> pageMySubmissions(long pageNum, long pageSize);
 
     /**
-     * 分页查询提交记录: scope=mine 查当前用户; scope=all 查全站(必须指定 problemId);
-     * problemId/status 可选过滤
+     * 分页查询提交记录: scope=mine 查当前用户; scope=all 查全站(必须指定 problemId 或 contestId);
+     * problemId/contestId/status 可选过滤
      */
-    Page<SubmissionListVO> pageSubmissions(String scope, Long problemId, JudgeStatus status,
+    Page<SubmissionListVO> pageSubmissions(String scope, Long problemId, Long contestId, JudgeStatus status,
                                            long pageNum, long pageSize);
 
     /**

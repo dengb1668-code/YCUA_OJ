@@ -54,10 +54,11 @@ public class SubmissionController {
     public Result<Page<SubmissionListVO>> page(
             @RequestParam(defaultValue = "mine") String scope,
             @RequestParam(required = false) Long problemId,
+            @RequestParam(required = false) Long contestId,
             @RequestParam(required = false) JudgeStatus status,
             @RequestParam(defaultValue = "1") long pageNum,
             @RequestParam(defaultValue = "10") long pageSize) {
-        return Result.ok(submissionService.pageSubmissions(scope, problemId, status, pageNum, pageSize));
+        return Result.ok(submissionService.pageSubmissions(scope, problemId, contestId, status, pageNum, pageSize));
     }
 
     /**

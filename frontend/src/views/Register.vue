@@ -1,5 +1,6 @@
 <template>
   <div class="register-page">
+    <VantaBackground bg-color="#ffffff" />
     <!-- 队名(学校名已在全局横幅中) -->
     <div class="school-line">YiChun University Algorithm Team</div>
 
@@ -58,6 +59,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { register } from '../api/user'
 import { userStore } from '../store/user'
+import VantaBackground from '../components/VantaBackground.vue'
 
 const router = useRouter()
 const loading = ref(false)
@@ -96,7 +98,6 @@ async function handleRegister() {
     ElMessage.success('注册成功, 已自动登录!')
     router.push('/problems')
   } catch (e) {
-    // request.js 拦截器已统一弹出错误提示
   } finally {
     loading.value = false
   }
@@ -104,9 +105,9 @@ async function handleRegister() {
 </script>
 
 <style scoped>
-/* HDOJ(杭电 OJ)风格注册页: 全局横幅之下 + 蓝边框卡片 */
+/* HDOJ(杭电 OJ)风格注册页: 飞鸟特效背景 + 蓝边框卡片 */
 .register-page {
-  background: #fff;
+  background: transparent;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -129,6 +130,12 @@ async function handleRegister() {
   background: #fff;
   border: 1px solid #1a5cc8;
   box-sizing: border-box;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.login-frame:hover, .register-frame:hover, .forgot-frame:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(26, 92, 200, 0.15);
 }
 
 .frame-title {

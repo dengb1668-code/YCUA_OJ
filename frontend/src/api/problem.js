@@ -32,6 +32,13 @@ export function updateProblem(id, data) {
 }
 
 /**
+ * 删除题目(创建者/管理端; 被比赛引用的题目不可删)
+ */
+export function deleteProblem(id) {
+  return request.delete(`/problem/${id}`)
+}
+
+/**
  * 测试点列表(仅元信息)
  */
 export function getTestCases(problemId) {

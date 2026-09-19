@@ -5,16 +5,24 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.oj.common.UserContext;
 import com.oj.dto.ProblemCreateRequest;
+import com.oj.entity.ContestProblem;
+import com.oj.entity.Post;
 import com.oj.entity.Problem;
+import com.oj.entity.Reply;
 import com.oj.entity.Submission;
 import com.oj.enums.JudgeStatus;
 import com.oj.enums.ProblemStatus;
+import com.oj.judge.TestDataStore;
+import com.oj.mapper.ContestProblemMapper;
+import com.oj.mapper.PostMapper;
 import com.oj.mapper.ProblemMapper;
+import com.oj.mapper.ReplyMapper;
 import com.oj.mapper.SubmissionMapper;
 import com.oj.service.ProblemService;
 import com.oj.service.TestDataService;
 import com.oj.vo.ProblemListVO;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -22,12 +30,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> implements ProblemService {
 
     private final SubmissionMapper submissionMapper;
     private final TestDataService testDataService;
+    private final TestDataStore testDataStore;
+    private final ContestProblemMapper contestProblemMapper;
+    private final PostMapper postMapper;
+    private final ReplyMapper replyMapper;
 
     @Override
     public Page<ProblemListVO> pageProblems(long pageNum, long pageSize, String keyword, Long userId) {
@@ -119,4 +132,44 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
         problem.setDescription(request.getDescription());
         problem.setInputDescription(request.getInputDescription());
         problem.setOutputDescription(request.getOutputDescription());
-        probl
+        problem.setSamples(request.getSamples());
+        problem.setTimeLimit(request.getTimeLimit());
+        problem.setMemoryLimit(request.getMemoryLimit());
+        problem.setDifficulty(request.getDifficulty());
+        updateById(problem);
+    }
+
+    @Override
+    public void deleteProblem(Long id) {
+        Problem problem = getById(id);
+        if (problem == null) {
+            throw new IllegalArgumentException("题目不存在: id=" + id);
+        }
+        // 权限与测试点管理一致: 创建者 ∨ 管理端
+        if (!testDataService.canManage(problem, UserContext.getUserId())) {
+            throw new IllegalArgumentException("无权限删除该题目");
+        }
+        // 被比赛引用的题目不可删(保护比赛完整性, 无论比赛是否开赛)
+        Long contestRefs = contestProblemMapper.selectCount(new LambdaQueryWrapper<ContestProblem>()
+                .eq(ContestProblem::getProblemId, id));
+        if (contestRefs != null && contestRefs > 0) {
+            throw new IllegalArgumentException("该题目已被比赛引用, 请先从比赛中移除后再删除");
+        }
+        // 级联: 帖子(含回复) -> 提交记录 -> 测试点文件 -> 题目
+        List<Long> postIds = postMapper.selectList(new LambdaQueryWrapper<Post>()
+                        .eq(Post::getProblemId, id)
+                        .select(Post::getId))
+                .stream().map(Post::getId).collect(Collectors.toList());
+        if (!postIds.isEmpty()) {
+            replyMapper.delete(new LambdaQueryWrapper<Reply>().in(Reply::getPostId, postIds));
+            postMapper.deleteByIds(postIds);
+        }
+        submissionMapper.delete(new LambdaQueryWrapper<Submission>().eq(Submission::getProblemId, id));
+        try {
+            testDataStore.deleteAll(id);
+        } catch (Exception e) {
+            log.warn("删除题目测试点文件失败: problemId={}", id, e);
+        }
+        removeById(id);
+    }
+}

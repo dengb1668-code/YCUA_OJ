@@ -9,6 +9,7 @@ import com.oj.service.ProblemService;
 import com.oj.vo.ProblemListVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -64,4 +65,18 @@ public class ProblemController {
      * PUT /api/problem/{id}
      */
     @PutMapping("/{id}")
-    public Result<Void> update(@PathVariable Long id, @Valid @RequestBody ProblemCreateRequ
+    public Result<Void> update(@PathVariable Long id, @Valid @RequestBody ProblemCreateRequest request) {
+        problemService.updateProblem(id, request);
+        return Result.ok(null);
+    }
+
+    /**
+     * 删除题目(创建者或管理端; 被比赛引用的题目不可删, 级联删除提交/帖子/测试点)
+     * DELETE /api/problem/{id}
+     */
+    @DeleteMapping("/{id}")
+    public Result<Void> delete(@PathVariable Long id) {
+        problemService.deleteProblem(id);
+        return Result.ok(null);
+    }
+}

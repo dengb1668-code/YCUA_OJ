@@ -117,7 +117,6 @@ async function setRole(row, role) {
     ElMessage.success(`${action}成功`)
     fetchList()
   } catch (e) {
-    // request.js 拦截器已统一弹出错误提示
   }
 }
 
@@ -132,7 +131,6 @@ async function fetchList() {
     users.value = data.records
     total.value = data.total
   } catch (e) {
-    // request.js 拦截器已统一弹出错误提示
   } finally {
     loading.value = false
   }

@@ -168,7 +168,14 @@
       "Bash(\"C:\\\\Program Files\\\\MySQL\\\\MySQL Server 8.0\\\\bin\\\\mysql.exe\" -uroot -p1234 -e \"UPDATE oj.user SET role=2 WHERE username='tester';\")",
       "Bash(PYTHONIOENCODING=utf-8 python target/smoke_test.py)",
       "Bash(\"C:\\\\Program Files\\\\MySQL\\\\MySQL Server 8.0\\\\bin\\\\mysql.exe\" -uroot -p1234 -e \"USE oj; UPDATE user SET role=0 WHERE username='tester'; DELETE FROM reply WHERE post_id IN \\(SELECT id FROM post WHERE user_id IN \\(SELECT id FROM user WHERE username LIKE 'smoke%' OR username LIKE 'plain%'\\)\\); DELETE FROM post WHERE user_id IN \\(SELECT id FROM user WHERE username LIKE 'smoke%' OR username LIKE 'plain%'\\); DELETE FROM problem WHERE title IN \\('smoke problem','edited'\\); DELETE FROM user WHERE username LIKE 'smoke%' OR username LIKE 'plain%'; SELECT id,username,role FROM user; SELECT id,title FROM problem;\")",
-      "Bash(echo \"---exit $?---\")"
+      "Bash(echo \"---exit $?---\")",
+      "Bash(\"C:\\\\Program Files\\\\MySQL\\\\MySQL Server 8.0\\\\bin\\\\mysql.exe\" -uroot -p1234 -e \"USE oj; SHOW TABLES; DESC contest; DESC contest_problem;\")",
+      "Bash(PYTHONIOENCODING=utf-8 python target/contest_smoke.py)",
+      "Bash(\"C:\\\\Program Files\\\\MySQL\\\\MySQL Server 8.0\\\\bin\\\\mysql.exe\" -uroot -p1234 -e \"USE oj; UPDATE user SET role=0 WHERE username='tester'; DELETE FROM submission; DELETE FROM contest_problem; DELETE FROM contest; DELETE FROM user WHERE username LIKE 'cu%' OR username LIKE 'smoke%' OR username LIKE 'plain%'; SELECT COUNT\\(*\\) AS submissions FROM submission; SELECT COUNT\\(*\\) AS contests FROM contest; SELECT id,username,role FROM user;\")",
+      "Bash(node --input-type=module -e ':*)",
+      "Bash(ls target/*.jar)",
+      "Bash(awk '{print $5, $9}')",
+      "Bash(node -e \"console.log\\('three 版本:', require\\('./node_modules/three/package.json'\\).version\\)\")"
     ]
   }
 }
