@@ -1,62 +1,60 @@
 <template>
-  <div class="forgot-page">
-    <VantaBackground bg-color="#ffffff" />
-    <!-- 队名(学校名已在全局横幅中) -->
-    <div class="school-line">YiChun University Algorithm Team</div>
-
-    <!-- HDOJ 风格卡片: 蓝边框 + 蓝条标题 + 白底表单 -->
-    <div class="forgot-frame">
-      <div class="frame-title">Online Judge 找回密码</div>
-      <div class="frame-body">
-        <el-form @keyup.enter="handleSubmit">
-          <el-form-item>
-            <el-input v-model="form.username" placeholder="用户名" size="large" />
-          </el-form-item>
-          <el-form-item>
-            <el-input v-model="form.phone" placeholder="注册时填写的手机号" size="large" />
-          </el-form-item>
-          <el-form-item>
-            <div class="captcha-row">
-              <el-input
-                v-model="form.captchaCode"
-                placeholder="验证码"
-                size="large"
-                class="captcha-input"
-              />
-              <img
-                v-if="captchaImage"
-                :src="captchaImage"
-                class="captcha-img"
-                title="点击刷新验证码"
-                alt="验证码"
-                @click="refreshCaptcha"
-              />
-            </div>
-          </el-form-item>
-          <el-form-item>
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <span class="logo-mark">&lt;/&gt;</span>
+        <span class="logo-text">YCUAoj</span>
+      </div>
+      <h2 class="auth-title">找回密码</h2>
+      <p class="auth-subtitle">验证身份后重置密码</p>
+      <el-form @keyup.enter="handleSubmit">
+        <el-form-item>
+          <el-input v-model="form.username" placeholder="用户名" size="large" />
+        </el-form-item>
+        <el-form-item>
+          <el-input v-model="form.phone" placeholder="注册时填写的手机号" size="large" />
+        </el-form-item>
+        <el-form-item>
+          <div class="captcha-row">
             <el-input
-              v-model="form.newPassword"
-              type="password"
-              placeholder="新密码(至少6位)"
+              v-model="form.captchaCode"
+              placeholder="验证码"
               size="large"
-              show-password
+              class="captcha-input"
             />
-          </el-form-item>
-          <el-button
-            type="primary"
+            <img
+              v-if="captchaImage"
+              :src="captchaImage"
+              class="captcha-img"
+              title="点击刷新验证码"
+              alt="验证码"
+              @click="refreshCaptcha"
+            />
+          </div>
+        </el-form-item>
+        <el-form-item>
+          <el-input
+            v-model="form.newPassword"
+            type="password"
+            placeholder="新密码(至少6位)"
             size="large"
-            class="submit-btn"
-            :loading="loading"
-            @click="handleSubmit"
-          >
-            重置密码
-          </el-button>
-        </el-form>
+            show-password
+          />
+        </el-form-item>
+        <el-button
+          type="primary"
+          size="large"
+          class="submit-btn"
+          :loading="loading"
+          @click="handleSubmit"
+        >
+          重置密码
+        </el-button>
+      </el-form>
 
-        <div class="switch-line">
-          想起密码了?
-          <router-link to="/login" class="switch-link">返回登录</router-link>
-        </div>
+      <div class="switch-line">
+        想起密码了?
+        <router-link to="/login" class="switch-link">返回登录</router-link>
       </div>
     </div>
   </div>
@@ -67,7 +65,6 @@ import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { forgotPassword, getCaptcha } from '../api/user'
-import VantaBackground from '../components/VantaBackground.vue'
 
 const router = useRouter()
 const loading = ref(false)
@@ -131,50 +128,6 @@ onMounted(refreshCaptcha)
 </script>
 
 <style scoped>
-/* HDOJ(杭电 OJ)风格: 飞鸟特效背景, 与登录/注册页一致 */
-.forgot-page {
-  background: transparent;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 30px 16px 60px;
-  min-height: calc(100vh - 187px);
-  box-sizing: border-box;
-}
-
-.school-line {
-  color: #555;
-  font-size: 15px;
-  letter-spacing: 3px;
-  margin-bottom: 18px;
-}
-
-.forgot-frame {
-  width: 420px;
-  max-width: 92vw;
-  background: #fff;
-  border: 1px solid #1a5cc8;
-  box-sizing: border-box;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.login-frame:hover, .register-frame:hover, .forgot-frame:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 30px rgba(26, 92, 200, 0.15);
-}
-
-.frame-title {
-  background: #1a5cc8;
-  color: #fff;
-  font-weight: bold;
-  font-size: 15px;
-  padding: 9px 16px;
-}
-
-.frame-body {
-  padding: 22px 26px 16px;
-}
-
 .submit-btn {
   width: 100%;
   margin-top: 4px;
@@ -193,21 +146,23 @@ onMounted(refreshCaptcha)
 .captcha-img {
   height: 40px;
   width: 130px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   cursor: pointer;
-  background: #fafafa;
+  background: var(--bg-soft);
+  flex-shrink: 0;
 }
 
 .switch-line {
   margin-top: 16px;
   text-align: center;
-  color: #666;
+  color: var(--text-2);
   font-size: 13px;
 }
 
 .switch-link {
-  color: #1a5cc8;
+  color: var(--brand);
   margin-left: 2px;
+  font-weight: 600;
 }
 </style>

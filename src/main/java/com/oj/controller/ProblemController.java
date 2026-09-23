@@ -1,6 +1,7 @@
 package com.oj.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.oj.common.ProblemTags;
 import com.oj.common.Result;
 import com.oj.common.UserContext;
 import com.oj.dto.ProblemCreateRequest;
@@ -19,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 /**
  * 题目相关接口
  */
@@ -30,16 +33,26 @@ public class ProblemController {
     private final ProblemService problemService;
 
     /**
-     * 分页获取题目列表(含当前登录用户做题状态, keyword 模糊匹配标题)
-     * GET /api/problem/page?pageNum=1&pageSize=10&keyword=
+     * 分页获取题目列表(含当前登录用户做题状态, keyword 模糊匹配标题, tags 多标签取交集筛选)
+     * GET /api/problem/page?pageNum=1&pageSize=10&keyword=&tags=动态规划&tags=图论
      */
     @GetMapping("/page")
     public Result<Page<ProblemListVO>> page(
             @RequestParam(defaultValue = "1") long pageNum,
             @RequestParam(defaultValue = "10") long pageSize,
-            @RequestParam(required = false) String keyword) {
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) List<String> tags) {
         // 当前用户由 AuthInterceptor 从 JWT 解析后放入 UserContext
-        return Result.ok(problemService.pageProblems(pageNum, pageSize, keyword, UserContext.getUserId()));
+        return Result.ok(problemService.pageProblems(pageNum, pageSize, keyword, tags, UserContext.getUserId()));
+    }
+
+    /**
+     * 获取全部可选标签(固定中文标签集)
+     * GET /api/problem/tags
+     */
+    @GetMapping("/tags")
+    public Result<List<String>> tags() {
+        return Result.ok(ProblemTags.ALL);
     }
 
     /**

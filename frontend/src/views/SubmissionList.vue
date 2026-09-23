@@ -13,12 +13,12 @@ import SubmissionListPanel from '../components/SubmissionListPanel.vue'
 .submission-list {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 24px 16px 60px;
+  padding: 28px 16px 64px;
 }
 
 .submission-list h2 {
   font-size: 20px;
-  font-weight: normal;
+  font-weight: 700;
   margin: 0 0 16px;
 }
 </style>

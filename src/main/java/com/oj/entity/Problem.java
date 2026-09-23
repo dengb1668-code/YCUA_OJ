@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
+import com.oj.enums.JudgeMode;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -53,8 +54,15 @@ public class Problem {
     /** 难度(Codeforces Rating, 800-3500) */
     private Integer difficulty;
 
+    /** 判题模式: ICPC(首错即停, 无部分分) / IOI(逐点部分分) */
+    private JudgeMode judgeMode;
+
     /** 创建者用户ID(测试点管理权限依据) */
     private Long authorId;
+
+    /** 题目标签(非表字段, 存 problem_tag 表, 列表/详情接口批量填充) */
+    @TableField(exist = false)
+    private List<String> tags;
 
     /** 当前登录用户是否可管理本题测试点(非表字段, 详情接口填充) */
     @TableField(exist = false)

@@ -40,11 +40,35 @@ public class CodeRunner {
     private static volatile boolean pchAttempted = false;
     private static volatile boolean pchReady = false;
 
+    /** 是否 Linux(内存测量与 ulimit 硬限仅 Linux 生效, Windows 开发机跳过) */
+    private static final boolean LINUX = !System.getProperty("os.name", "").toLowerCase().contains("win");
+    /** GNU time 路径(测子进程 max RSS 用); 服务器需 apt install time */
+    private static final Path GNU_TIME = Path.of("/usr/bin/time");
+    private static volatile boolean gnuTimeChecked = false;
+    private static volatile boolean gnuTimeAvailable = false;
+    /** GNU time 报告块起始行(从此处开始裁剪, 避免污染 RE 的 errorMessage) */
+    private static final String TIME_REPORT_START = "Command being timed:";
+    private static final java.util.regex.Pattern MAX_RSS_PATTERN =
+            java.util.regex.Pattern.compile("Maximum resident set size \\(kbytes\\):\\s*(\\d+)");
+
     /** 一次运行的结果 */
-    public record RunResult(String stdout, String stderr, int exitCode, boolean timedOut, long elapsedMillis) {
+    public record RunResult(String stdout, String stderr, int exitCode, boolean timedOut, long elapsedMillis,
+                            Integer memoryKb) {
         public static RunResult timeout(long elapsedMillis) {
-            return new RunResult("", "", -1, true, elapsedMillis);
+            return new RunResult("", "", -1, true, elapsedMillis, null);
         }
+    }
+
+    /** 探测 GNU time 是否可用(首次探测后缓存; Windows 恒 false) */
+    private static boolean gnuTimeAvailable() {
+        if (!LINUX) {
+            return false;
+        }
+        if (!gnuTimeChecked) {
+            gnuTimeChecked = true;
+            gnuTimeAvailable = Files.isExecutable(GNU_TIME);
+        }
+        return gnuTimeAvailable;
     }
 
     /** 检查本机是否有所选语言的工具链, 无则返回提示信息 */
@@ -225,14 +249,33 @@ public class CodeRunner {
         return null;
     }
 
-    /** 运行程序, 输入经 stdin 注入, 超过 timeoutMillis 强制终止 */
-    public RunResult run(Path dir, Language language, String input, long timeoutMillis) throws IOException, InterruptedException {
-        ProcessBuilder pb = switch (language) {
-            case CPP, C, GO -> new ProcessBuilder(dir.resolve("main.exe").toString());
-            case JAVA -> new ProcessBuilder("java", "-cp", dir.toString(), "Main");
-            case PYTHON3 -> new ProcessBuilder(pythonCommand(), "main.py");
-            case JAVASCRIPT -> new ProcessBuilder("node", "main.js");
+    /**
+     * 运行程序, 输入经 stdin 注入, 超过 timeoutMillis 强制终止。
+     * <p>
+     * Linux 下用 bash 包装加硬限制(ulimit -u 防 fork 炸弹, ulimit -v 内存硬限),
+     * 装有 GNU time 时附加 max RSS 测量(结果在 RunResult.memoryKb, 供 MLE 判定);
+     * Windows 开发机不做包装与测量, memoryKb 恒为 null。
+     *
+     * @param memoryLimitMb 内存限制(MB, 可空=不限, 如自定义测试)
+     */
+    public RunResult run(Path dir, Language language, String input, long timeoutMillis, Integer memoryLimitMb)
+            throws IOException, InterruptedException {
+        List<String> baseCommand = switch (language) {
+            case CPP, C, GO -> List.of(dir.resolve("main.exe").toString());
+            // Java 用 -Xmx 约束堆(默认堆=物理内存 1/4, 2G 机器上会被用户代码吃爆), 上限留 64MB 给堆外
+            case JAVA -> memoryLimitMb == null
+                    ? List.of("java", "-cp", dir.toString(), "Main")
+                    : List.of("java", "-Xmx" + Math.max(64, memoryLimitMb + 64) + "m", "-cp", dir.toString(), "Main");
+            case PYTHON3 -> List.of(pythonCommand(), "main.py");
+            case JAVASCRIPT -> List.of("node", "main.js");
         };
+
+        ProcessBuilder pb;
+        if (LINUX) {
+            pb = new ProcessBuilder(linuxCommand(baseCommand, language, memoryLimitMb));
+        } else {
+            pb = new ProcessBuilder(baseCommand);
+        }
         pb.directory(dir.toFile());
 
         long start = System.nanoTime();
@@ -262,7 +305,86 @@ public class CodeRunner {
         }
         outThread.join();
         errThread.join();
-        return new RunResult(stdout[0], stderr[0], process.exitValue(), false, elapsed);
+
+        Integer memoryKb = null;
+        String childStderr = stderr[0];
+        if (LINUX && gnuTimeAvailable()) {
+            memoryKb = parseMaxRssKb(childStderr);
+            childStderr = stripTimeReport(childStderr);
+        }
+        return new RunResult(stdout[0], childStderr, process.exitValue(), false, elapsed, memoryKb);
+    }
+
+    /**
+     * Linux 运行命令包装: [可选 GNU time -v] bash -c "ulimit -u 64; [ulimit -v X;] exec <原命令>"
+     * exec 使 bash 原位替换为用户程序, 不残留中间进程层
+     */
+    private List<String> linuxCommand(List<String> baseCommand, Language language, Integer memoryLimitMb) {
+        StringBuilder script = new StringBuilder("ulimit -u 64; ");
+        long ulimitKb = ulimitKb(language, memoryLimitMb);
+        if (ulimitKb > 0) {
+            script.append("ulimit -v ").append(ulimitKb).append("; ");
+        }
+        script.append("exec");
+        for (String arg : baseCommand) {
+            script.append(' ').append(shellQuote(arg));
+        }
+
+        if (gnuTimeAvailable()) {
+            return List.of(GNU_TIME.toString(), "-v", "/bin/bash", "-c", script.toString());
+        }
+        return List.of("/bin/bash", "-c", script.toString());
+    }
+
+    /**
+     * ulimit -v 硬限(KB): 用户程序内存硬保险丝, 按 limit 的 2 倍预留解释器/运行时开销。
+     * Java 跳过(JVM 预留虚拟地址空间极大, 加 ulimit -v 必然启动失败, 改由 -Xmx 约束);
+     * 解释型语言(Python/Node)解释器自身占内存, 额外预留 128MB。
+     * 返回 0 表示不设置。
+     */
+    private long ulimitKb(Language language, Integer memoryLimitMb) {
+        if (memoryLimitMb == null) {
+            return 0;
+        }
+        long reserveMb = switch (language) {
+            case CPP, C, GO -> 0;
+            case PYTHON3, JAVASCRIPT -> 128;
+            case JAVA -> -1; // 跳过
+        };
+        if (reserveMb < 0) {
+            return 0;
+        }
+        return Math.max(64 * 1024L, (memoryLimitMb + reserveMb) * 1024L * 2);
+    }
+
+    /** 从 GNU time 报告中解析 max RSS(KB), 无报告返回 null */
+    private Integer parseMaxRssKb(String stderr) {
+        if (stderr == null) {
+            return null;
+        }
+        java.util.regex.Matcher m = MAX_RSS_PATTERN.matcher(stderr);
+        if (m.find()) {
+            try {
+                return Integer.parseInt(m.group(1));
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    /** 裁剪 GNU time 报告块(Command being timed 起), 只保留子进程自身的 stderr */
+    private String stripTimeReport(String stderr) {
+        if (stderr == null) {
+            return "";
+        }
+        int idx = stderr.indexOf(TIME_REPORT_START);
+        return idx < 0 ? stderr : stderr.substring(0, idx).stripTrailing();
+    }
+
+    /** 单引号包裹 shell 参数, 防空格/特殊字符注入(参数不含用户可控内容, 双保险) */
+    private String shellQuote(String s) {
+        return "'" + s.replace("'", "'\\''") + "'";
     }
 
     /** 递归删除临时目录, 失败忽略 */

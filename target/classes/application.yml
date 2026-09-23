@@ -28,6 +28,11 @@ oj:
     # 开发用密钥(HS256 要求至少 32 字节), 生产环境务必更换
     secret: "oj-shell-dev-secret-key-0123456789-abcdefghijklmnopqrstuvwxyz"
     expire-hours: 168
+  judge:
+    # 判题并发(2C2G 服务器保持 1; 编译/运行是 CPU+内存密集型, 高配机器可调大)
+    core-pool-size: 1
+    max-pool-size: 1
+    queue-capacity: 200
 
 mybatis-plus:
   configuration:

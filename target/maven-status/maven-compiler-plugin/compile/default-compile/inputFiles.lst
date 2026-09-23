@@ -1,6 +1,7 @@
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\common\CaptchaService.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\common\JwtUtil.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\common\NicknameUtil.java
+C:\Users\10600\Desktop\oj\src\main\java\com\oj\common\ProblemTags.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\common\Result.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\common\UserContext.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\config\AsyncConfig.java
@@ -35,10 +36,12 @@ C:\Users\10600\Desktop\oj\src\main\java\com\oj\entity\Contest.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\entity\ContestProblem.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\entity\Post.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\entity\Problem.java
+C:\Users\10600\Desktop\oj\src\main\java\com\oj\entity\ProblemTag.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\entity\Reply.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\entity\Submission.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\entity\User.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\enums\ContestType.java
+C:\Users\10600\Desktop\oj\src\main\java\com\oj\enums\JudgeMode.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\enums\JudgeStatus.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\enums\Language.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\enums\PostType.java
@@ -56,6 +59,7 @@ C:\Users\10600\Desktop\oj\src\main\java\com\oj\mapper\ContestMapper.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\mapper\ContestProblemMapper.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\mapper\PostMapper.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\mapper\ProblemMapper.java
+C:\Users\10600\Desktop\oj\src\main\java\com\oj\mapper\ProblemTagMapper.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\mapper\ReplyMapper.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\mapper\SubmissionMapper.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\mapper\UserMapper.java

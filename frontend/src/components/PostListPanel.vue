@@ -1,40 +1,49 @@
 <template>
   <div class="post-list-panel">
     <div class="page-head">
-      <h2>{{ type === 'SOLUTION' ? '题解' : '讨论' }}</h2>
-      <el-button type="primary" plain @click="openCreate">发布{{ type === 'SOLUTION' ? '题解' : '帖子' }}</el-button>
+      <h2 class="page-title">{{ type === 'SOLUTION' ? '题解' : '讨论区' }}</h2>
+      <el-button type="primary" plain @click="openCreate">
+        发布{{ type === 'SOLUTION' ? '题解' : '帖子' }}
+      </el-button>
     </div>
 
-    <el-table v-loading="loading" :data="posts">
-      <el-table-column label="标题" min-width="360">
-        <template #default="{ row }">
-          <el-link type="primary" @click="router.push(`/post/${row.id}`)">{{ row.title }}</el-link>
-        </template>
-      </el-table-column>
-      <el-table-column v-if="!problemId" label="关联题目" width="220">
-        <template #default="{ row }">
-          <el-link v-if="row.problemId" type="primary" @click="router.push(`/problems/${row.problemId}`)">
-            {{ row.problemTitle }}
-          </el-link>
-          <span v-else class="muted">—</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="作者" width="140">
-        <template #default="{ row }">
-          <span>{{ row.authorName }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="回复" width="80" align="center">
-        <template #default="{ row }">
-          <span class="muted">{{ row.replyCount }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="发布时间" width="170">
-        <template #default="{ row }">
-          <span class="muted">{{ formatTime(row.createTime) }}</span>
-        </template>
-      </el-table-column>
-    </el-table>
+    <div class="table-scroll">
+      <el-table v-loading="loading" :data="posts">
+        <el-table-column label="标题" min-width="360">
+          <template #default="{ row }">
+            <el-link type="primary" :underline="false" class="post-link" @click="router.push(`/post/${row.id}`)">
+              {{ row.title }}
+            </el-link>
+          </template>
+        </el-table-column>
+        <el-table-column v-if="!problemId" label="关联题目" width="220">
+          <template #default="{ row }">
+            <el-link v-if="row.problemId" type="primary" :underline="false" @click="router.push(`/problems/${row.problemId}`)">
+              {{ row.problemTitle }}
+            </el-link>
+            <span v-else class="muted">—</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="作者" width="150">
+          <template #default="{ row }">
+            <span class="user-cell">
+              <span class="mini-avatar">{{ (row.authorName || '?')[0].toUpperCase() }}</span>
+              {{ row.authorName }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column label="回复" width="90" align="center">
+          <template #default="{ row }">
+            <span class="reply-badge" :class="{ zero: !row.replyCount }">{{ row.replyCount }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="发布时间" width="170">
+          <template #default="{ row }">
+            <span class="muted">{{ formatTime(row.createTime) }}</span>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
 
     <el-pagination
       v-model:current-page="pageNum"
@@ -175,48 +184,74 @@ onMounted(fetchList)
 .post-list-panel {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 24px 16px 60px;
+  padding: 28px 16px 64px;
 }
 
 .page-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
-.page-head h2 {
-  font-size: 20px;
-  font-weight: normal;
+.page-title {
+  font-size: 22px;
+  font-weight: 700;
   margin: 0;
 }
 
 .muted {
-  color: #888;
+  color: var(--text-3);
+}
+
+.post-link {
+  font-size: 14px;
+}
+
+.user-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.mini-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.reply-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.reply-badge.zero {
+  background: var(--mute-soft);
+  color: var(--mute);
 }
 
 .problem-id-input {
   width: 200px;
-}
-
-/* 表格: AtCoder 细边框风格(与题目列表一致) */
-.post-list-panel :deep(.el-table) {
-  border: 1px solid #ddd;
-}
-
-.post-list-panel :deep(.el-table th.el-table__cell) {
-  background: #eee;
-  color: #333;
-  font-weight: 600;
-}
-
-.post-list-panel :deep(.el-table td.el-table__cell) {
-  border-bottom: 1px solid #ddd;
-}
-
-.post-list-panel :deep(.el-table .cell) {
-  padding: 8px 12px;
-  font-size: 14px;
 }
 
 .post-list-panel :deep(.el-pagination) {

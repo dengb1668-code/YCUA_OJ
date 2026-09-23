@@ -1,52 +1,71 @@
 <template>
   <div class="problem-list">
     <div class="page-head">
-      <h2>题目列表</h2>
+      <h2 class="page-title">题库</h2>
       <div class="head-actions">
+        <el-select
+          v-model="selectedTags"
+          multiple
+          filterable
+          collapse-tags
+          placeholder="按标签筛选"
+          clearable
+          style="width: 240px"
+          @change="handleSearch"
+        >
+          <el-option v-for="t in allTags" :key="t" :label="t" :value="t" />
+        </el-select>
         <el-input
           v-model="keyword"
           placeholder="按标题搜索"
           clearable
-          style="width: 220px"
+          style="width: 200px"
           @keyup.enter="handleSearch"
           @clear="handleSearch"
         />
         <el-button plain @click="handleSearch">搜索</el-button>
-        <el-button type="primary" plain @click="router.push('/problems/create')">创建题目</el-button>
+        <el-button type="primary" plain @click="router.push('/problems/create')">
+          创建题目
+        </el-button>
       </div>
     </div>
 
-    <el-table v-loading="loading" :data="problems">
-      <el-table-column label="ID" width="90">
-        <template #default="{ row }">
-          <span class="prob-id">{{ row.id }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="标题" min-width="300">
-        <template #default="{ row }">
-          <el-link type="primary" @click="goDetail(row.id)">{{ row.title }}</el-link>
-        </template>
-      </el-table-column>
-      <el-table-column label="来源" width="130">
-        <template #default="{ row }">
-          <span class="muted">{{ row.source || '—' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="难度" width="90" align="center">
-        <template #default="{ row }">
-          <span class="rating" :style="{ color: ratingColor(row.difficulty) }">
-            {{ row.difficulty }}
-          </span>
-        </template>
-      </el-table-column>
-      <el-table-column label="状态" width="120">
-        <template #default="{ row }">
-          <span class="status" :class="`status-${statusClass(row.status)}`">
-            {{ statusLabel(row.status) }}
-          </span>
-        </template>
-      </el-table-column>
-    </el-table>
+    <div class="table-scroll">
+      <el-table v-loading="loading" :data="problems" @row-click="goDetail" class="clickable-table">
+        <el-table-column label="#" width="70">
+          <template #default="{ row }">
+            <span class="mono prob-id">{{ row.id }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="标题" min-width="320">
+          <template #default="{ row }">
+            <el-link type="primary" :underline="false" class="prob-link" @click.stop="goDetail(row.id)">
+              {{ row.title }}
+            </el-link>
+          </template>
+        </el-table-column>
+        <el-table-column label="来源" width="140">
+          <template #default="{ row }">
+            <span class="muted">{{ row.source || '—' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="难度" width="100" align="center">
+          <template #default="{ row }">
+            <span class="rating-text" :style="{ color: ratingColor(row.difficulty) }">
+              {{ row.difficulty }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" width="130" align="center">
+          <template #default="{ row }">
+            <span class="status" :class="`status-${statusClass(row.status)}`">
+              <span class="status-glyph">{{ statusGlyph(row.status) }}</span>
+              {{ statusLabel(row.status) }}
+            </span>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
 
     <el-pagination
       v-model:current-page="pageNum"
@@ -61,7 +80,7 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { getProblemPage } from '../api/problem'
+import { getProblemPage, getProblemTags } from '../api/problem'
 import { ratingColor } from '../utils/rating'
 
 const router = useRouter()
@@ -72,12 +91,15 @@ const total = ref(0)
 const pageNum = ref(1)
 const pageSize = ref(10)
 const keyword = ref('')
+const selectedTags = ref([])
+const allTags = ref([])
 
-// 后端 ProblemStatus 枚举名 -> 展示文案与文字颜色(AtCoder 风格)
+// 后端 ProblemStatus 枚举名 -> 展示文案与颜色(CF 风格: 错=红, CE=黄, AC=绿)
 const statusMap = {
-  NOT_ATTEMPTED: { label: '未开始', cls: 'gray' },
-  ATTEMPTED: { label: '尝试中', cls: 'orange' },
-  SOLVED: { label: '已通过', cls: 'green' }
+  NOT_ATTEMPTED: { label: '未开始', cls: 'gray', glyph: '—' },
+  ATTEMPTED: { label: '未通过', cls: 'red', glyph: '✕' },
+  COMPILE_ERROR: { label: '编译错误', cls: 'yellow', glyph: '!' },
+  SOLVED: { label: '已通过', cls: 'green', glyph: '✓' }
 }
 
 function statusLabel(status) {
@@ -88,9 +110,13 @@ function statusClass(status) {
   return statusMap[status]?.cls ?? 'gray'
 }
 
-/** 跳转题目详情页 */
-function goDetail(id) {
-  router.push(`/problems/${id}`)
+function statusGlyph(status) {
+  return statusMap[status]?.glyph ?? '—'
+}
+
+/** 整行可点击跳转题目详情 */
+function goDetail(row) {
+  router.push(`/problems/${row.id}`)
 }
 
 function handleSearch() {
@@ -104,7 +130,8 @@ async function fetchList() {
     const data = await getProblemPage({
       pageNum: pageNum.value,
       pageSize: pageSize.value,
-      keyword: keyword.value.trim()
+      keyword: keyword.value.trim(),
+      tags: selectedTags.value
     })
     problems.value = data.records
     total.value = data.total
@@ -114,88 +141,111 @@ async function fetchList() {
   }
 }
 
-onMounted(fetchList)
+onMounted(() => {
+  fetchList()
+  // 标签集加载失败不阻塞列表
+  getProblemTags().then((tags) => (allTags.value = tags)).catch(() => {})
+})
 </script>
 
 <style scoped>
 .problem-list {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 24px 16px 60px;
+  padding: 28px 16px 64px;
 }
 
 .page-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.page-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
 }
 
 .head-actions {
   display: flex;
   gap: 8px;
   align-items: center;
-}
-
-.problem-list h2 {
-  font-size: 20px;
-  font-weight: normal;
-  margin: 0;
+  flex-wrap: wrap;
 }
 
 .muted {
-  color: #888;
-}
-
-.rating {
-  font-weight: 600;
-  font-family: Helvetica, Arial, sans-serif;
+  color: var(--text-3);
 }
 
 .prob-id {
-  color: #888;
+  color: var(--text-3);
+  font-size: 13px;
 }
 
-/* 做题状态: AtCoder 式彩色文字 */
-.status {
+.prob-link {
   font-size: 14px;
+}
+
+/* 整行可点击 */
+.clickable-table :deep(.el-table__row) {
+  cursor: pointer;
+}
+
+/* CF 式难度彩色文字 */
+.rating-text {
+  font-weight: 600;
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+}
+
+/* 做题状态: 彩色文字 + 小符号 */
+.status {
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.status-glyph {
+  font-weight: 700;
 }
 
 .status-gray {
-  color: #999;
+  color: var(--text-3);
 }
 
-.status-orange {
-  color: #f0ad4e;
+.status-red {
+  color: var(--bad);
+}
+
+.status-yellow {
+  color: var(--wa);
 }
 
 .status-green {
-  color: #5cb85c;
-  font-weight: 600;
-}
-
-/* 表格: AtCoder 细边框风格 */
-.problem-list :deep(.el-table) {
-  border: 1px solid #ddd;
-}
-
-.problem-list :deep(.el-table th.el-table__cell) {
-  background: #eee;
-  color: #333;
-  font-weight: 600;
-}
-
-.problem-list :deep(.el-table td.el-table__cell) {
-  border-bottom: 1px solid #ddd;
-}
-
-.problem-list :deep(.el-table .cell) {
-  padding: 8px 12px;
-  font-size: 14px;
+  color: var(--ok);
 }
 
 .problem-list :deep(.el-pagination) {
   margin-top: 16px;
   justify-content: flex-end;
+}
+
+@media (max-width: 640px) {
+  .head-actions {
+    width: 100%;
+  }
+
+  .head-actions .el-select,
+  .head-actions .el-input {
+    flex: 1;
+    width: auto !important;
+    min-width: 0;
+  }
 }
 </style>

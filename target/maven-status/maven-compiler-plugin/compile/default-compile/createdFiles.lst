@@ -3,6 +3,7 @@ com\oj\mapper\ReplyMapper.class
 com\oj\service\impl\SubmissionServiceImpl.class
 com\oj\dto\PostUpdateRequest.class
 com\oj\entity\Problem.class
+com\oj\common\ProblemTags.class
 com\oj\mapper\UserMapper.class
 com\oj\judge\JudgeWorker.class
 com\oj\vo\ContestListVO.class
@@ -16,6 +17,7 @@ com\oj\mapper\ContestProblemMapper.class
 com\oj\vo\PostDetailVO.class
 com\oj\vo\UserStatsVO.class
 com\oj\service\impl\ProblemServiceImpl.class
+com\oj\enums\JudgeMode.class
 com\oj\vo\ContestJoinVO.class
 com\oj\judge\CodeRunner.class
 com\oj\entity\Problem$Sample.class
@@ -69,6 +71,7 @@ com\oj\config\WebMvcConfig.class
 com\oj\service\impl\ContestServiceImpl.class
 com\oj\common\JwtUtil.class
 com\oj\vo\CustomTestVO.class
+com\oj\entity\ProblemTag.class
 com\oj\dto\TestCaseConfigRequest.class
 com\oj\entity\Contest.class
 com\oj\judge\CodeRunner$1.class
@@ -94,6 +97,7 @@ com\oj\service\TestDataService$StoreOp.class
 com\oj\entity\Submission$JudgeCase.class
 com\oj\service\UserService.class
 com\oj\judge\CodeRunner$CompileResult.class
+com\oj\mapper\ProblemTagMapper.class
 com\oj\controller\PostController.class
 com\oj\dto\ReplyRequest.class
 com\oj\dto\ContestJoinRequest.class

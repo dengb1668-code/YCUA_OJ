@@ -5,45 +5,50 @@
 
       <div v-loading="loading">
         <template v-if="post">
-          <!-- 标题与操作 -->
-          <div class="post-head">
-            <h2 class="post-title">{{ post.title }}</h2>
-            <div v-if="post.canEdit || post.canDelete" class="post-actions">
-              <el-button v-if="post.canEdit" size="small" plain @click="openEdit">编辑</el-button>
-              <el-button v-if="post.canDelete" size="small" plain type="danger" @click="handleDelete">
-                删除
-              </el-button>
+          <!-- 帖子主体卡 -->
+          <div class="oj-card post-card">
+            <div class="post-head">
+              <h2 class="post-title">{{ post.title }}</h2>
+              <div v-if="post.canEdit || post.canDelete" class="post-actions">
+                <el-button v-if="post.canEdit" size="small" plain @click="openEdit">编辑</el-button>
+                <el-button v-if="post.canDelete" size="small" plain type="danger" @click="handleDelete">
+                  删除
+                </el-button>
+              </div>
             </div>
-          </div>
 
-          <!-- 元信息 -->
-          <div class="post-meta">
-            <span class="type-tag" :class="post.type === 'SOLUTION' ? 'tag-solution' : 'tag-discussion'">
-              {{ post.type === 'SOLUTION' ? '题解' : '讨论' }}
-            </span>
-            <span class="meta-item">作者: {{ post.authorName }}</span>
-            <span class="meta-item">{{ formatTime(post.createTime) }}</span>
-            <el-link
-              v-if="post.problemId"
-              type="primary"
-              class="meta-item"
-              @click="router.push(`/problems/${post.problemId}`)"
-            >
-              {{ post.problemTitle }}
-            </el-link>
-          </div>
+            <div class="post-meta">
+              <span class="type-tag" :class="post.type === 'SOLUTION' ? 'tag-solution' : 'tag-discussion'">
+                {{ post.type === 'SOLUTION' ? '题解' : '讨论' }}
+              </span>
+              <span class="user-cell">
+                <span class="mini-avatar">{{ (post.authorName || '?')[0].toUpperCase() }}</span>
+                {{ post.authorName }}
+              </span>
+              <span class="meta-item muted">{{ formatTime(post.createTime) }}</span>
+              <el-link
+                v-if="post.problemId"
+                type="primary"
+                :underline="false"
+                class="meta-item"
+                @click="router.push(`/problems/${post.problemId}`)"
+              >
+                {{ post.problemTitle }}
+              </el-link>
+            </div>
 
-          <!-- 正文 -->
-          <div class="markdown-body post-content" v-html="renderMarkdown(post.content)"></div>
+            <div class="markdown-body post-content" v-html="renderMarkdown(post.content)"></div>
+          </div>
 
           <!-- 回复区 -->
           <div class="reply-section">
-            <h3>回复 ({{ post.replies?.length ?? 0 }})</h3>
+            <h3 class="reply-title">回复 ({{ post.replies?.length ?? 0 }})</h3>
 
             <div v-if="post.replies?.length" class="reply-list">
-              <div v-for="(reply, idx) in post.replies" :key="reply.id" class="reply-item">
+              <div v-for="(reply, idx) in post.replies" :key="reply.id" class="oj-card reply-item">
                 <div class="reply-head">
-                  <span class="reply-floor">#{{ idx + 1 }}</span>
+                  <span class="floor-badge mono">#{{ idx + 1 }}</span>
+                  <span class="mini-avatar">{{ (reply.authorName || '?')[0].toUpperCase() }}</span>
                   <span class="reply-author">{{ reply.authorName }}</span>
                   <span class="reply-time">{{ formatTime(reply.createTime) }}</span>
                   <el-button
@@ -51,6 +56,7 @@
                     size="small"
                     text
                     type="danger"
+                    class="reply-del"
                     @click="handleDeleteReply(reply.id)"
                   >
                     删除
@@ -59,9 +65,13 @@
                 <div class="markdown-body reply-content" v-html="renderMarkdown(reply.content)"></div>
               </div>
             </div>
-            <div v-else class="no-reply">暂无回复</div>
+            <div v-else class="no-reply">暂无回复, 来抢沙发</div>
 
-            <div class="reply-box">
+            <div class="oj-card reply-box">
+              <div class="reply-box-head">
+                <span class="mini-avatar">{{ (userStore.username || '?')[0].toUpperCase() }}</span>
+                <span class="reply-as">{{ userStore.username }}</span>
+              </div>
               <el-input
                 v-model="replyContent"
                 type="textarea"
@@ -101,6 +111,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { addReply, deletePost, deleteReply, getPostDetail, updatePost } from '../api/post'
 import { renderMarkdown } from '../utils/markdown'
+import { userStore } from '../store/user'
 
 const route = useRoute()
 const router = useRouter()
@@ -212,8 +223,8 @@ onMounted(fetchDetail)
 
 <style scoped>
 .post-detail {
-  background: #fff;
-  min-height: calc(100vh - 44px);
+  background: var(--bg);
+  min-height: calc(100vh - var(--header-height));
 }
 
 .container {
@@ -223,20 +234,26 @@ onMounted(fetchDetail)
 }
 
 .back {
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+}
+
+/* 帖子主体卡 */
+.post-card {
+  padding: 22px 26px;
 }
 
 .post-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
 }
 
 .post-title {
-  font-size: 22px;
-  font-weight: normal;
-  margin: 8px 0 12px;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0;
   word-break: break-word;
 }
 
@@ -250,78 +267,121 @@ onMounted(fetchDetail)
   display: flex;
   align-items: center;
   gap: 16px;
-  color: #888;
+  flex-wrap: wrap;
+  color: var(--text-2);
   font-size: 13px;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 12px;
-  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  padding: 12px 0 14px;
+  margin: 12px 0 16px;
 }
 
 .type-tag {
-  padding: 2px 8px;
-  border-radius: 3px;
+  padding: 1px 8px;
+  border-radius: 4px;
   font-size: 12px;
+  font-weight: 600;
   color: #fff;
 }
 
 .tag-discussion {
-  background: #1a5cc8;
+  background: var(--brand);
 }
 
 .tag-solution {
   background: #5cb85c;
 }
 
+.user-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.mini-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
 .meta-item {
   font-size: 13px;
 }
 
+.muted {
+  color: var(--text-3);
+}
+
 .post-content {
   min-height: 120px;
+  font-size: 15px;
 }
 
 /* 回复区 */
 .reply-section {
-  margin-top: 36px;
-  border-top: 2px solid #eee;
-  padding-top: 20px;
+  margin-top: 28px;
 }
 
-.reply-section h3 {
-  font-size: 16px;
+.reply-title {
+  font-size: 17px;
   font-weight: 600;
-  margin: 0 0 12px;
+  margin: 0 0 14px;
+}
+
+.reply-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .reply-item {
-  border-bottom: 1px solid #eee;
-  padding: 10px 0;
+  padding: 14px 18px;
 }
 
 .reply-head {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 9px;
   font-size: 13px;
-  color: #666;
-  margin-bottom: 6px;
+  color: var(--text-2);
+  margin-bottom: 8px;
 }
 
-.reply-floor {
-  font-weight: 600;
-  color: #1a5cc8;
+.floor-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-size: 11.5px;
+  font-weight: 700;
 }
 
 .reply-author {
   font-weight: 600;
-  color: #333;
+  color: var(--text);
 }
 
 .reply-time {
-  color: #aaa;
+  color: var(--text-3);
+  font-size: 12.5px;
 }
 
-.reply-head .el-button {
+.reply-del {
   margin-left: auto;
 }
 
@@ -330,17 +390,41 @@ onMounted(fetchDetail)
 }
 
 .no-reply {
-  color: #999;
-  padding: 12px 0;
+  color: var(--text-3);
+  padding: 24px 0;
   font-size: 14px;
+  text-align: center;
 }
 
 .reply-box {
-  margin-top: 20px;
+  padding: 14px 18px 16px;
+}
+
+.reply-box-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 10px;
+}
+
+.reply-as {
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+.reply-box :deep(.el-textarea__inner) {
+  font-size: 14px;
 }
 
 .reply-actions {
   margin-top: 10px;
   text-align: right;
+}
+
+@media (max-width: 640px) {
+  .post-card {
+    padding: 18px 16px;
+  }
 }
 </style>

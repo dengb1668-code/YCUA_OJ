@@ -43,18 +43,19 @@ async function handleCreate(payload) {
 
 <style scoped>
 .problem-create {
-  min-height: calc(100vh - 44px);
+  background: var(--bg);
+  min-height: calc(100vh - var(--header-height));
 }
 
 .container {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 24px 16px 80px;
+  padding: 28px 16px 80px;
 }
 
 .problem-create h2 {
-  font-size: 20px;
-  font-weight: normal;
-  margin: 0 0 16px;
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 18px;
 }
 </style>

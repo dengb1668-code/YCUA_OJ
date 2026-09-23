@@ -5,32 +5,39 @@
 
       <div v-loading="loading">
         <template v-if="contest">
-          <!-- 信息条 -->
-          <div class="head">
-            <h2 class="title">{{ contest.title }}</h2>
-            <div class="tags">
-              <span class="type-tag" :class="`type-${contest.type}`">{{ contest.type }}</span>
-              <span class="status" :class="`status-${contest.status}`">{{ statusLabel(contest.status) }}</span>
-              <span v-if="contest.hasPassword" class="muted">密码保护</span>
+          <!-- 头部信息卡 -->
+          <div class="oj-card head-card">
+            <div class="head-top">
+              <h2 class="title">{{ contest.title }}</h2>
+              <div class="tags">
+                <span class="type-tag" :class="`type-${contest.type}`">{{ contest.type }}</span>
+                <span class="status" :class="`status-${contest.status}`">{{ statusLabel(contest.status) }}</span>
+                <span v-if="contest.hasPassword" class="lock-hint">
+                  <el-icon :size="13"><Lock /></el-icon>密码保护
+                </span>
+              </div>
             </div>
             <div class="meta">
-              <span>创建者: {{ contest.creatorName }}</span>
-              <span>开始: {{ formatTime(contest.startTime) }}</span>
-              <span>结束: {{ formatTime(contest.endTime) }}</span>
-              <span v-if="contest.status === 'RUNNING'" class="countdown">
+              <span>创建者 <b>{{ contest.creatorName }}</b></span>
+              <span>开始 <b class="mono">{{ formatTime(contest.startTime) }}</b></span>
+              <span>结束 <b class="mono">{{ formatTime(contest.endTime) }}</b></span>
+              <span v-if="contest.status === 'RUNNING'" class="countdown mono">
                 {{ countdownText }}
               </span>
             </div>
-            <div v-if="contest.description" class="markdown-body desc" v-html="renderMarkdown(contest.description)"></div>
-          </div>
-
-          <!-- 管理区(创建者/管理端) -->
-          <div v-if="contest.canManage" class="manage-bar">
-            <el-button size="small" plain @click="openEdit">编辑比赛</el-button>
-            <el-button v-if="contest.status === 'NOT_STARTED'" size="small" plain @click="openManageProblems">
-              题目管理
-            </el-button>
-            <el-button size="small" plain type="danger" @click="handleDelete">删除比赛</el-button>
+            <div
+              v-if="contest.description"
+              class="markdown-body desc"
+              v-html="renderMarkdown(contest.description)"
+            ></div>
+            <!-- 管理区(创建者/管理端) -->
+            <div v-if="contest.canManage" class="manage-bar">
+              <el-button size="small" plain @click="openEdit">编辑比赛</el-button>
+              <el-button v-if="contest.status === 'NOT_STARTED'" size="small" plain @click="openManageProblems">
+                题目管理
+              </el-button>
+              <el-button size="small" plain type="danger" @click="handleDelete">删除比赛</el-button>
+            </div>
           </div>
 
           <!-- 密码门 -->
@@ -43,24 +50,25 @@
           <el-tabs v-else v-model="activeTab" class="tabs">
             <el-tab-pane label="题目" name="problems">
               <el-table :data="contest.problems ?? []" v-loading="problemsLoading">
-                <el-table-column label="题号" width="80">
+                <el-table-column label="题号" width="90">
                   <template #default="{ row }">
-                    <span class="display-id">{{ row.displayId }}</span>
+                    <span class="display-id mono">{{ row.displayId }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="标题" min-width="300">
                   <template #default="{ row }">
                     <el-link
                       type="primary"
+                      :underline="false"
                       @click="router.push(`/problems/${row.problemId}?contest=${contest.id}`)"
                     >
                       {{ row.title }}
                     </el-link>
                   </template>
                 </el-table-column>
-                <el-table-column label="难度" width="90" align="center">
+                <el-table-column label="难度" width="110" align="center">
                   <template #default="{ row }">
-                    <span :style="{ color: ratingColor(row.difficulty) }">{{ row.difficulty }}</span>
+                    <span class="rating mono" :style="{ color: ratingColor(row.difficulty) }">{{ row.difficulty }}</span>
                   </template>
                 </el-table-column>
               </el-table>
@@ -69,40 +77,54 @@
 
             <el-tab-pane label="榜单" name="standings">
               <div v-if="standings?.hidden" class="empty-tip">
+                <el-icon :size="22"><Hide /></el-icon>
                 比赛进行中, 榜单将在比赛结束后公布
               </div>
               <div v-else>
-                <table class="standings-table" v-if="standings?.rows?.length">
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th>用户</th>
-                      <th v-for="p in standings.problems" :key="p.problemId" class="prob-col">{{ p.displayId }}</th>
-                      <th v-if="contest.type === 'ICPC'">解题</th>
-                      <th v-if="contest.type === 'ICPC'">罚时</th>
-                      <th v-if="contest.type !== 'ICPC'">总分</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="row in standings.rows" :key="row.userId">
-                      <td>{{ row.rank }}</td>
-                      <td class="user-cell">{{ row.username }}</td>
-                      <template v-if="contest.type === 'ICPC'">
-                        <td v-for="(st, i) in row.problemStates" :key="i" class="prob-col">
-                          <span v-if="st" :class="st.startsWith('+') ? 'cell-ac' : 'cell-wa'">{{ st }}</span>
+                <div v-if="standings?.rows?.length" class="table-scroll">
+                  <table class="standings-table">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>用户</th>
+                        <th v-for="p in standings.problems" :key="p.problemId" class="prob-col">{{ p.displayId }}</th>
+                        <th v-if="contest.type === 'ICPC'">解题</th>
+                        <th v-if="contest.type === 'ICPC'">罚时</th>
+                        <th v-if="contest.type !== 'ICPC'">总分</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr
+                        v-for="row in standings.rows"
+                        :key="row.userId"
+                        :class="`rank-${row.rank}`"
+                      >
+                        <td><span class="rank-badge" :class="`medal-${row.rank}`">{{ row.rank }}</span></td>
+                        <td class="user-cell">
+                          <span class="mini-avatar">{{ (row.username || '?')[0].toUpperCase() }}</span>
+                          {{ row.username }}
                         </td>
-                        <td>{{ row.solved }}</td>
-                        <td>{{ row.penalty }}</td>
-                      </template>
-                      <template v-else>
-                        <td v-for="(sc, i) in row.problemScores" :key="i" class="prob-col">
-                          <span v-if="sc != null">{{ sc }}</span>
-                        </td>
-                        <td class="total-cell">{{ row.totalScore }}</td>
-                      </template>
-                    </tr>
-                  </tbody>
-                </table>
+                        <template v-if="contest.type === 'ICPC'">
+                          <td v-for="(st, i) in row.problemStates" :key="i" class="prob-col">
+                            <span
+                              v-if="st"
+                              class="cell-state"
+                              :class="st.startsWith('+') ? 'cell-ac' : 'cell-wa'"
+                            >{{ st }}</span>
+                          </td>
+                          <td class="mono"><b>{{ row.solved }}</b></td>
+                          <td class="mono">{{ row.penalty }}</td>
+                        </template>
+                        <template v-else>
+                          <td v-for="(sc, i) in row.problemScores" :key="i" class="prob-col">
+                            <span v-if="sc != null" class="mono score-cell" :class="{ full: sc >= 100 }">{{ sc }}</span>
+                          </td>
+                          <td class="total-cell mono"><b>{{ row.totalScore }}</b></td>
+                        </template>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
                 <div v-else class="empty-tip">暂无提交</div>
               </div>
             </el-tab-pane>
@@ -160,7 +182,7 @@
       </el-select>
       <div v-if="manageProblemIds.length" class="selected-list">
         <div v-for="(pid, idx) in manageProblemIds" :key="pid" class="selected-row">
-          <span class="letter">{{ toLetters(idx) }}</span>
+          <span class="letter mono">{{ toLetters(idx) }}</span>
           <span class="ptitle">{{ problemTitle(pid) }}</span>
           <span class="ops">
             <el-button size="small" text :disabled="idx === 0" @click="moveManage(idx, -1)">上移</el-button>
@@ -188,6 +210,7 @@
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Lock, Hide } from '@element-plus/icons-vue'
 import {
   deleteContest,
   getContestDetail,
@@ -448,8 +471,8 @@ onUnmounted(() => {
 
 <style scoped>
 .contest-detail {
-  background: #fff;
-  min-height: calc(100vh - 44px);
+  background: var(--bg);
+  min-height: calc(100vh - var(--header-height));
 }
 
 .container {
@@ -459,31 +482,48 @@ onUnmounted(() => {
 }
 
 .back {
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+}
+
+/* 头部信息卡 */
+.head-card {
+  padding: 20px 24px;
+}
+
+.head-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
 }
 
 .title {
-  font-size: 22px;
-  font-weight: normal;
-  margin: 8px 0 10px;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0;
+  word-break: break-word;
 }
 
 .tags {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 10px;
+  flex-shrink: 0;
 }
 
 .type-tag {
-  padding: 2px 8px;
-  border-radius: 3px;
-  font-size: 12px;
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
   color: #fff;
+  font-family: var(--font-mono);
 }
 
 .type-ICPC {
-  background: #1a5cc8;
+  background: var(--brand);
 }
 
 .type-OI {
@@ -496,33 +536,48 @@ onUnmounted(() => {
 
 .status {
   font-size: 13px;
-}
-
-.status-gray {
-  color: #999;
-}
-
-.status-green {
-  color: #5cb85c;
   font-weight: 600;
 }
 
+.status-gray {
+  color: var(--text-3);
+}
+
+.status-green {
+  color: var(--ok);
+}
+
 .status-red {
-  color: #d9534f;
+  color: var(--bad);
+}
+
+.lock-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12.5px;
+  color: var(--text-3);
 }
 
 .meta {
   display: flex;
-  gap: 18px;
-  color: #666;
+  gap: 20px;
+  flex-wrap: wrap;
+  color: var(--text-2);
   font-size: 13px;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.meta b {
+  color: var(--text);
+  font-weight: 600;
 }
 
 .countdown {
-  color: #d9534f;
-  font-weight: 600;
+  color: var(--bad);
+  font-weight: 700;
 }
 
 .desc {
@@ -531,7 +586,9 @@ onUnmounted(() => {
 }
 
 .manage-bar {
-  margin: 14px 0;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
 }
 
 .password-gate {
@@ -542,68 +599,176 @@ onUnmounted(() => {
 }
 
 .tabs {
-  margin-top: 12px;
+  margin-top: 16px;
 }
 
 .display-id {
-  font-weight: 600;
-  color: #1a5cc8;
+  font-weight: 700;
+  color: var(--brand);
 }
 
-.empty-tip {
-  color: #999;
-  text-align: center;
-  padding: 40px 0;
-  font-size: 14px;
+.rating {
+  font-weight: 700;
+  font-size: 13px;
 }
 
 /* 榜单 */
 .standings-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
 }
 
 .standings-table th {
-  background: #eee;
-  border: 1px solid #ddd;
-  padding: 6px 10px;
+  background: var(--bg-soft);
+  border-bottom: 1px solid var(--border);
+  padding: 9px 10px;
   font-weight: 600;
   text-align: center;
+  color: var(--text-2);
+  font-size: 12px;
+  position: sticky;
+  top: 0;
 }
 
 .standings-table td {
-  border: 1px solid #ddd;
-  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  padding: 8px 10px;
   text-align: center;
+  color: var(--text);
 }
 
-.standings-table .user-cell {
-  text-align: left;
+.standings-table tbody tr:last-child td {
+  border-bottom: none;
 }
 
-.standings-table .prob-col {
-  width: 56px;
+.standings-table tbody tr:hover td {
+  background: var(--bg-hover);
+}
+
+/* 前三名奖牌底色(行) */
+.standings-table tbody tr.rank-1 td {
+  background: rgba(240, 196, 64, 0.1);
+}
+
+.standings-table tbody tr.rank-2 td {
+  background: rgba(160, 170, 186, 0.12);
+}
+
+.standings-table tbody tr.rank-3 td {
+  background: rgba(196, 128, 68, 0.1);
+}
+
+html.dark .standings-table tbody tr.rank-1 td {
+  background: rgba(240, 196, 64, 0.08);
+}
+
+html.dark .standings-table tbody tr.rank-2 td {
+  background: rgba(160, 170, 186, 0.07);
+}
+
+html.dark .standings-table tbody tr.rank-3 td {
+  background: rgba(196, 128, 68, 0.08);
+}
+
+.standings-table tbody tr:hover td {
+  background: var(--bg-hover);
+}
+
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--bg-soft);
+  color: var(--text-2);
+}
+
+.medal-1 {
+  background: #f0c440;
+  color: #5b4500;
+}
+
+.medal-2 {
+  background: #b8c2d0;
+  color: #3d4a5c;
+}
+
+.medal-3 {
+  background: #d8a06a;
+  color: #5e3a15;
+}
+
+.user-cell {
+  text-align: left !important;
+}
+
+.user-cell .mini-avatar {
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-size: 11px;
+  font-weight: 700;
+  align-items: center;
+  justify-content: center;
+  margin-right: 7px;
+  vertical-align: middle;
+}
+
+.prob-col {
+  width: 64px;
+}
+
+.cell-state {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 700;
+  display: inline-block;
+  min-width: 26px;
+  padding: 1px 6px;
+  border-radius: 4px;
 }
 
 .cell-ac {
-  color: #5cb85c;
-  font-weight: 600;
+  color: var(--ok);
+  background: var(--ok-soft);
 }
 
 .cell-wa {
-  color: #d9534f;
+  color: var(--bad);
+}
+
+.score-cell {
+  font-weight: 600;
+}
+
+.score-cell.full {
+  color: var(--ok);
 }
 
 .total-cell {
-  font-weight: 600;
-  color: #1a5cc8;
+  font-weight: 700;
+  color: var(--brand);
 }
 
 /* 题目管理弹窗 */
 .selected-list {
   width: 100%;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   margin-top: 10px;
 }
 
@@ -611,8 +776,8 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 6px 12px;
-  border-bottom: 1px solid #eee;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
 }
 
 .selected-row:last-child {
@@ -620,8 +785,8 @@ onUnmounted(() => {
 }
 
 .letter {
-  font-weight: 600;
-  color: #1a5cc8;
+  font-weight: 700;
+  color: var(--brand);
   min-width: 24px;
 }
 

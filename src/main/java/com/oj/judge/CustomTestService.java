@@ -39,7 +39,8 @@ public class CustomTestService {
                 return CustomTestVO.error("编译失败:\n" + compileError);
             }
 
-            CodeRunner.RunResult result = codeRunner.run(dir, request.getLanguage(), request.getInput(), TIMEOUT_MILLIS);
+            // 自定义测试不限制内存(无内存限制与测量)
+            CodeRunner.RunResult result = codeRunner.run(dir, request.getLanguage(), request.getInput(), TIMEOUT_MILLIS, null);
             if (result.timedOut()) {
                 return CustomTestVO.error("运行超时(>5 秒), 已强制终止");
             }

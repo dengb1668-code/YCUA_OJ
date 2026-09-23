@@ -1,48 +1,49 @@
 <template>
   <div class="contest-list">
     <div class="page-head">
-      <h2>比赛</h2>
+      <h2 class="page-title">比赛</h2>
       <el-button type="primary" plain @click="router.push('/contests/create')">创建比赛</el-button>
     </div>
 
-    <el-table v-loading="loading" :data="contests">
-      <el-table-column label="标题" min-width="280">
-        <template #default="{ row }">
-          <el-link type="primary" @click="router.push(`/contests/${row.id}`)">{{ row.title }}</el-link>
-        </template>
-      </el-table-column>
-      <el-table-column label="赛制" width="90" align="center">
-        <template #default="{ row }">
-          <span class="type-tag" :class="`type-${row.type}`">{{ row.type }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="开始时间" width="170">
-        <template #default="{ row }">
-          <span class="muted">{{ formatTime(row.startTime) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="结束时间" width="170">
-        <template #default="{ row }">
-          <span class="muted">{{ formatTime(row.endTime) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="状态" width="100" align="center">
-        <template #default="{ row }">
-          <span class="status" :class="`status-${row.status}`">{{ statusLabel(row.status) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="创建者" width="140">
-        <template #default="{ row }">
-          <span>{{ row.creatorName }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="加密" width="70" align="center">
-        <template #default="{ row }">
-          <span v-if="row.hasPassword" class="muted">是</span>
-          <span v-else class="muted">—</span>
-        </template>
-      </el-table-column>
-    </el-table>
+    <div v-loading="loading" class="contest-grid">
+      <div
+        v-for="c in contests"
+        :key="c.id"
+        class="oj-card contest-card"
+        :class="`st-${c.status}`"
+        @click="router.push(`/contests/${c.id}`)"
+      >
+        <div class="card-top">
+          <span class="type-tag" :class="`type-${c.type}`">{{ c.type }}</span>
+          <span class="status-dot" :class="`status-${c.status}`">
+            <span class="dot"></span>{{ statusLabel(c.status) }}
+          </span>
+        </div>
+        <div class="contest-title">{{ c.title }}</div>
+        <div class="contest-times">
+          <div class="time-row">
+            <span class="time-label">开始</span>
+            <span class="mono">{{ formatTime(c.startTime) }}</span>
+          </div>
+          <div class="time-row">
+            <span class="time-label">结束</span>
+            <span class="mono">{{ formatTime(c.endTime) }}</span>
+          </div>
+        </div>
+        <div class="card-bottom">
+          <span class="creator">
+            <span class="mini-avatar">{{ (c.creatorName || '?')[0].toUpperCase() }}</span>
+            {{ c.creatorName }}
+          </span>
+          <span v-if="c.hasPassword" class="lock-hint">
+            <el-icon :size="13"><Lock /></el-icon>
+            加密
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="!loading && !contests.length" class="empty-tip">暂无比赛</div>
 
     <el-pagination
       v-model:current-page="pageNum"
@@ -57,6 +58,7 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { Lock } from '@element-plus/icons-vue'
 import { getContestPage } from '../api/contest'
 import { formatTime } from '../utils/verdict'
 
@@ -97,35 +99,83 @@ onMounted(fetchList)
 .contest-list {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 24px 16px 60px;
+  padding: 28px 16px 64px;
 }
 
 .page-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
-.page-head h2 {
-  font-size: 20px;
-  font-weight: normal;
+.page-title {
+  font-size: 22px;
+  font-weight: 700;
   margin: 0;
 }
 
-.muted {
-  color: #888;
+/* 比赛卡片网格 */
+.contest-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+  min-height: 80px;
+}
+
+.contest-card {
+  padding: 16px 18px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+
+.contest-card:hover {
+  border-color: var(--brand);
+  box-shadow: var(--shadow-md);
+}
+
+/* 左侧状态色条 */
+.contest-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+}
+
+.contest-card.st-RUNNING::before {
+  background: var(--ok);
+}
+
+.contest-card.st-NOT_STARTED::before {
+  background: var(--mute);
+}
+
+.contest-card.st-ENDED::before {
+  background: var(--border-strong);
+}
+
+.card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
 }
 
 .type-tag {
-  padding: 2px 8px;
-  border-radius: 3px;
-  font-size: 12px;
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
   color: #fff;
+  font-family: var(--font-mono);
 }
 
 .type-ICPC {
-  background: #1a5cc8;
+  background: var(--brand);
 }
 
 .type-OI {
@@ -136,45 +186,102 @@ onMounted(fetchList)
   background: #f0ad4e;
 }
 
-.status {
-  font-size: 13px;
+.status-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  color: var(--text-3);
 }
 
-.status-gray {
-  color: #999;
+.status-dot .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--mute);
 }
 
-.status-green {
-  color: #5cb85c;
+.status-dot.status-RUNNING .dot {
+  background: var(--ok);
+  box-shadow: 0 0 0 3px var(--ok-soft);
+}
+
+.status-dot.status-RUNNING {
+  color: var(--ok);
   font-weight: 600;
 }
 
-.status-red {
-  color: #d9534f;
-}
-
-/* 表格: AtCoder 细边框风格 */
-.contest-list :deep(.el-table) {
-  border: 1px solid #ddd;
-}
-
-.contest-list :deep(.el-table th.el-table__cell) {
-  background: #eee;
-  color: #333;
+.contest-title {
+  font-size: 15.5px;
   font-weight: 600;
+  color: var(--text);
+  margin-bottom: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.contest-list :deep(.el-table td.el-table__cell) {
-  border-bottom: 1px solid #ddd;
+.contest-times {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 14px;
 }
 
-.contest-list :deep(.el-table .cell) {
-  padding: 8px 12px;
-  font-size: 14px;
+.time-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+.time-label {
+  width: 30px;
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+
+.card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.creator {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+.mini-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lock-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-3);
 }
 
 .contest-list :deep(.el-pagination) {
-  margin-top: 16px;
+  margin-top: 18px;
   justify-content: flex-end;
 }
 </style>

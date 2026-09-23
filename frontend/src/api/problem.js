@@ -2,10 +2,21 @@ import request from './request'
 
 /**
  * 分页获取题目列表(含当前用户做题状态)
- * @param {Object} params { pageNum, pageSize, userId }
+ * @param {Object} params { pageNum, pageSize, keyword, tags }
+ * tags 为中文标签数组, 内部逗号拼接(后端 @RequestParam List 按逗号拆分)
  */
 export function getProblemPage(params) {
-  return request.get('/problem/page', { params })
+  const { tags, ...rest } = params || {}
+  const query = { ...rest }
+  if (tags && tags.length) query.tags = tags.join(',')
+  return request.get('/problem/page', { params: query })
+}
+
+/**
+ * 全部可选标签(固定中文标签集)
+ */
+export function getProblemTags() {
+  return request.get('/problem/tags')
 }
 
 /**

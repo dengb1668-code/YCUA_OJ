@@ -19,8 +19,8 @@ const problemId = Number(route.params.id)
 
 <style scoped>
 .problem-submissions {
-  background: #fff;
-  min-height: calc(100vh - 44px);
+  background: var(--bg);
+  min-height: calc(100vh - var(--header-height));
   max-width: 1100px;
   margin: 0 auto;
   padding: 16px 16px 60px;
@@ -32,7 +32,7 @@ const problemId = Number(route.params.id)
 
 .head h2 {
   font-size: 20px;
-  font-weight: normal;
+  font-weight: 700;
   margin: 8px 0 0;
 }
 </style>

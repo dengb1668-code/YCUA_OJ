@@ -1,10 +1,12 @@
 package com.oj.vo;
 
 import com.oj.entity.Problem;
+import com.oj.enums.JudgeMode;
 import com.oj.enums.ProblemStatus;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 题目列表项
@@ -23,6 +25,12 @@ public class ProblemListVO {
     /** 难度(Codeforces Rating) */
     private Integer difficulty;
 
+    /** 判题模式: ICPC(首错即停) / IOI(部分分) */
+    private JudgeMode judgeMode;
+
+    /** 题目标签(中文, 列表接口批量填充) */
+    private List<String> tags;
+
     /** 时间限制(毫秒) */
     private Integer timeLimit;
 
@@ -40,6 +48,8 @@ public class ProblemListVO {
         vo.setTitle(problem.getTitle());
         vo.setSource(problem.getSource());
         vo.setDifficulty(problem.getDifficulty());
+        vo.setJudgeMode(problem.getJudgeMode());
+        vo.setTags(problem.getTags());
         vo.setTimeLimit(problem.getTimeLimit());
         vo.setMemoryLimit(problem.getMemoryLimit());
         vo.setCreateTime(problem.getCreateTime());

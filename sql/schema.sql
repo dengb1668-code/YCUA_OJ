@@ -43,6 +43,7 @@ CREATE TABLE `problem` (
     `time_limit`         INT          NOT NULL DEFAULT 1000   COMMENT '时间限制(毫秒)',
     `memory_limit`       INT          NOT NULL DEFAULT 256    COMMENT '内存限制(MB)',
     `difficulty`         INT          NOT NULL DEFAULT 800    COMMENT '难度(Codeforces Rating, 800-3500)',
+    `judge_mode`         TINYINT      NOT NULL DEFAULT 0      COMMENT '判题模式: 0-ICPC(首错即停), 1-IOI(部分分)',
     `author_id`          BIGINT       DEFAULT NULL            COMMENT '创建者用户ID(测试点管理权限依据)',
     `create_time`        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time`        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -66,6 +67,7 @@ CREATE TABLE `submission` (
     `code`          MEDIUMTEXT  NOT NULL                COMMENT '提交的源代码',
     `status`        TINYINT     NOT NULL DEFAULT 0      COMMENT '判题状态: 0-Pending, 1-Judging, 2-AC, 3-WA, 4-TLE, 5-MLE, 6-RE, 7-CE, 8-SE',
     `score`         INT         DEFAULT NULL            COMMENT '得分(计分制, 满分=题目测试点分值总和)',
+    `failed_test_index` INT     DEFAULT NULL            COMMENT 'ICPC 模式首个失败测试点序号',
     `time_used`     INT         DEFAULT NULL            COMMENT '运行耗时(毫秒)',
     `memory_used`   INT         DEFAULT NULL            COMMENT '运行内存(KB)',
     `error_message` TEXT        DEFAULT NULL            COMMENT '错误信息(编译错误/运行时错误输出)',
@@ -81,6 +83,16 @@ CREATE TABLE `submission` (
 -- 已有库升级(比赛系统新增 contest_id 列):
 -- ALTER TABLE submission ADD COLUMN contest_id BIGINT DEFAULT NULL COMMENT '所属比赛ID' AFTER problem_id;
 -- ALTER TABLE submission ADD KEY idx_contest_id (contest_id);
+
+-- ------------------------------------------------------------
+-- 3.5 题目标签表(标签集为后端常量, 不做字典表)
+-- ------------------------------------------------------------
+CREATE TABLE `problem_tag` (
+    `problem_id` BIGINT      NOT NULL COMMENT '题目ID',
+    `tag`        VARCHAR(20) NOT NULL COMMENT '标签(中文, 后端常量白名单)',
+    PRIMARY KEY (`problem_id`, `tag`),
+    KEY `idx_tag` (`tag`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '题目标签表';
 
 -- ------------------------------------------------------------
 -- 4. 帖子表(讨论帖/题解统一建模)

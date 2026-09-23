@@ -40,6 +40,9 @@ public class SubmissionListVO {
     /** 得分(计分制) */
     private Integer score;
 
+    /** ICPC 模式首个失败测试点序号(显示 "Wrong answer on test N" 用) */
+    private Integer failedTestIndex;
+
     /** 运行耗时(毫秒), CE 等未运行场景为 null */
     private Integer timeUsed;
 

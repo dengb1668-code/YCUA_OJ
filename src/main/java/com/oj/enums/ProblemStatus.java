@@ -11,7 +11,9 @@ public enum ProblemStatus {
 
     NOT_ATTEMPTED(0, "未尝试"),
     ATTEMPTED(1, "尝试未通过"),
-    SOLVED(2, "已通过");
+    SOLVED(2, "已通过"),
+    /** 最新一次提交为编译错误(无 AC 记录), 前端黄色展示 */
+    COMPILE_ERROR(3, "编译错误");
 
     private final int code;
 

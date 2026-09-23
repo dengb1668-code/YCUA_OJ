@@ -3,38 +3,17 @@
     <div class="container">
       <el-page-header @back="router.back()" class="back" />
 
-      <!-- 标题与限制(AtCoder 风格: 居中标题 + 边框限制框) -->
-      <h2 class="problem-title">{{ problem?.title ?? '题目详情' }}</h2>
-      <div v-if="problem?.source" class="problem-source">{{ problem.source }}</div>
-      <div v-if="problem" class="limits">
-        <div>
-          难度:
-          <span class="rating" :style="{ color: ratingColor(problem.difficulty) }">
-            {{ problem.difficulty }}
-          </span>
-        </div>
-        <div>时间限制: {{ (problem.timeLimit / 1000).toFixed(2) }} sec</div>
-        <div>内存限制: {{ problem.memoryLimit }} MB</div>
-        <div class="limits-actions">
-          <el-button
-            size="small"
-            plain
-            @click="router.push(`/problems/${problemId}/discussion`)"
-          >
+      <!-- 标题行: 左对齐标题 + 右侧功能按钮 -->
+      <div v-if="problem" class="title-row">
+        <h1 class="problem-title">{{ problem.title }}</h1>
+        <div class="title-actions">
+          <el-button size="small" plain @click="router.push(`/problems/${problemId}/discussion`)">
             讨论
           </el-button>
-          <el-button
-            size="small"
-            plain
-            @click="router.push(`/problems/${problemId}/solution`)"
-          >
+          <el-button size="small" plain @click="router.push(`/problems/${problemId}/solution`)">
             题解
           </el-button>
-          <el-button
-            size="small"
-            plain
-            @click="router.push(`/problems/${problemId}/submissions`)"
-          >
+          <el-button size="small" plain @click="router.push(`/problems/${problemId}/submissions`)">
             提交记录
           </el-button>
           <el-button
@@ -43,15 +22,46 @@
             plain
             @click="router.push(`/problems/${problemId}/manage`)"
           >
-            管理题目{{ problem.testCaseCount ? ` (${problem.testCaseCount} 个测试点)` : '' }}
+            管理题目{{ problem.testCaseCount ? ` (${problem.testCaseCount})` : '' }}
           </el-button>
+        </div>
+      </div>
+
+      <!-- 元信息行: 来源 / 限制 / 判题模式 / 难度 -->
+      <div v-if="problem" class="meta-line">
+        <span v-if="problem.source" class="meta-item">{{ problem.source }}</span>
+        <span class="meta-item">
+          时间限制
+          <span class="mono meta-val">{{ (problem.timeLimit / 1000).toFixed(2) }} s</span>
+        </span>
+        <span class="meta-item">
+          内存限制
+          <span class="mono meta-val">{{ problem.memoryLimit }} MB</span>
+        </span>
+        <span class="meta-item">{{ problem.judgeMode ?? 'ICPC' }}</span>
+        <span class="meta-item">
+          难度
+          <span class="meta-val rating" :style="{ color: ratingColor(problem.difficulty) }">
+            {{ problem.difficulty }}
+          </span>
+        </span>
+      </div>
+
+      <!-- 题目标签(洛谷式: 默认隐藏, 手动选择显示, 防止剧透思路) -->
+      <div v-if="problem?.tags?.length" class="detail-tags-area">
+        <el-link type="primary" :underline="false" class="tags-toggle" @click="showTags = !showTags">
+          {{ showTags ? '隐藏标签' : '显示标签' }}
+        </el-link>
+        <div v-if="showTags" class="detail-tags">
+          <el-tag v-for="t in problem.tags" :key="t" size="small" class="tag-chip">{{ t }}</el-tag>
         </div>
       </div>
 
       <!-- 比赛提交模式横幅 -->
       <div v-if="contestId" class="contest-banner">
-        比赛提交模式: 本页提交将计入比赛 #{{ contestId }}
-        <el-link type="primary" class="banner-link" @click="router.push(`/contests/${contestId}`)">
+        <el-icon><Trophy /></el-icon>
+        <span>比赛提交模式: 本页提交将计入比赛 #{{ contestId }}</span>
+        <el-link type="primary" :underline="false" class="banner-link" @click="router.push(`/contests/${contestId}`)">
           返回比赛
         </el-link>
       </div>
@@ -73,15 +83,27 @@
 
           <div v-if="problem.samples?.length" class="section">
             <h3>样例</h3>
-            <div v-for="(sample, idx) in problem.samples" :key="idx" class="sample">
-              <div class="sample-heading">样例 {{ idx + 1 }}</div>
-              <div class="sample-item">
-                <div class="sample-label-line">输入</div>
-                <pre class="sample-content">{{ sample.input }}</pre>
+            <div v-for="(sample, idx) in problem.samples" :key="idx" class="sample-card">
+              <div class="sample-head">
+                <span class="sample-name">样例 {{ idx + 1 }}</span>
+                <span class="sample-copy">
+                  <el-link type="primary" :underline="false" @click="copyText(sample.input)">
+                    复制输入
+                  </el-link>
+                  <el-link type="primary" :underline="false" @click="copyText(sample.output)">
+                    复制输出
+                  </el-link>
+                </span>
               </div>
-              <div class="sample-item">
-                <div class="sample-label-line">输出</div>
-                <pre class="sample-content">{{ sample.output }}</pre>
+              <div class="sample-io">
+                <div class="sample-item">
+                  <div class="sample-label">输入</div>
+                  <pre class="sample-content">{{ sample.input }}</pre>
+                </div>
+                <div class="sample-item">
+                  <div class="sample-label">输出</div>
+                  <pre class="sample-content">{{ sample.output }}</pre>
+                </div>
               </div>
               <div v-if="sample.explanation" class="sample-explain">
                 <div class="explain-label">样例解释</div>
@@ -92,43 +114,46 @@
         </template>
       </div>
 
-      <!-- 提交区 -->
+      <!-- 提交区: 编辑器卡片 -->
       <div class="section submit-section">
         <h3>代码提交</h3>
-        <div class="toolbar">
-          <el-select v-model="language" style="width: 160px">
-            <el-option
-              v-for="opt in languageOptions"
-              :key="opt.value"
-              :label="opt.label"
-              :value="opt.value"
+        <div class="editor-card">
+          <div class="editor-head">
+            <el-select v-model="language" style="width: 150px">
+              <el-option
+                v-for="opt in languageOptions"
+                :key="opt.value"
+                :label="opt.label"
+                :value="opt.value"
+              />
+            </el-select>
+            <span class="editor-hint">切换语言将重置为对应模板</span>
+          </div>
+          <div class="editor-wrapper">
+            <vue-monaco-editor
+              v-model:value="code"
+              :language="monacoLang"
+              :options="editorOptions"
+              height="420px"
             />
-          </el-select>
-        </div>
-        <div class="editor-wrapper">
-          <vue-monaco-editor
-            v-model:value="code"
-            :language="monacoLang"
-            :options="editorOptions"
-            height="420px"
-          />
-        </div>
-        <div class="submit-bar">
-          <el-button
-            type="primary"
-            :loading="submitting"
-            :disabled="judging"
-            @click="handleSubmit"
-          >
-            {{ judging ? '判题中...' : '提交' }}
-          </el-button>
+          </div>
+          <div class="submit-bar">
+            <el-button
+              type="primary"
+              :loading="submitting"
+              :disabled="judging"
+              @click="handleSubmit"
+            >
+              {{ judging ? '判题中...' : '提交' }}
+            </el-button>
+          </div>
         </div>
       </div>
 
-      <!-- 自定义测试(AtCoder コードテスト) -->
+      <!-- 自定义测试卡片 -->
       <div class="section custom-test-section">
         <h3>自定义测试</h3>
-        <div class="test-input">
+        <div class="test-card">
           <div class="sample-label">输入</div>
           <el-input
             v-model="testInput"
@@ -136,34 +161,44 @@
             :rows="4"
             placeholder="在这里输入测试数据(标准输入)..."
           />
-        </div>
-        <div class="test-actions">
-          <el-button type="primary" plain :loading="testing" @click="handleCustomTest">
-            运行自测
-          </el-button>
-        </div>
-        <div v-if="testResult" class="test-output">
-          <div v-if="testResult.error" class="sample-label error-label">错误信息</div>
-          <div v-else class="sample-label">标准输出</div>
-          <pre :class="{ 'error-text': testResult.error }">{{ testResult.error || testResult.output || '(无输出)' }}</pre>
+          <div class="test-actions">
+            <el-button type="primary" plain :loading="testing" @click="handleCustomTest">
+              运行自测
+            </el-button>
+          </div>
+          <template v-if="testResult">
+            <div class="sample-label" :class="{ 'error-label': testResult.error }">
+              {{ testResult.error ? '错误信息' : '标准输出' }}
+            </div>
+            <pre :class="{ 'error-text': testResult.error }" class="test-result">
+              {{ testResult.error || testResult.output || '(无输出)' }}
+            </pre>
+          </template>
         </div>
       </div>
     </div>
 
-    <!-- AtCoder 风格判题结果弹窗 -->
+    <!-- 判题结果弹窗 -->
     <el-dialog v-model="resultVisible" title="判题结果" width="520px" align-center>
       <div v-if="lastResult" class="verdict">
         <div class="verdict-short" :style="{ color: verdictOf(lastResult.status).color }">
           {{ verdictOf(lastResult.status).short }}
         </div>
-        <div class="verdict-full">{{ verdictOf(lastResult.status).label }}</div>
+        <div class="verdict-full">{{ verdictText(lastResult.status, lastResult.failedTestIndex) }}</div>
         <div class="verdict-meta">
-          耗时 {{ lastResult.timeUsed != null ? lastResult.timeUsed + ' ms' : '—' }}
-          / 内存 {{ lastResult.memoryUsed != null ? lastResult.memoryUsed + ' KB' : '—' }}
-          <span v-if="totalFullScore != null"> / 得分 {{ lastResult.score ?? 0 }} / {{ totalFullScore }}</span>
+          <span v-if="lastResult.timeUsed != null" class="mono">{{ lastResult.timeUsed }} ms</span>
+          <span v-if="lastResult.memoryUsed != null" class="mono">{{ lastResult.memoryUsed }} KB</span>
+          <span v-if="totalFullScore != null" class="mono">
+            得分 {{ lastResult.score ?? 0 }} / {{ totalFullScore }}
+          </span>
         </div>
         <div v-if="lastResult.judgeDetail?.length" class="case-summary">
-          通过 {{ passedCount }} / {{ lastResult.judgeDetail.length }}
+          <template v-if="lastResult.failedTestIndex != null">
+            已测 {{ lastResult.judgeDetail.length }} 个测试点
+          </template>
+          <template v-else>
+            通过 {{ passedCount }} / {{ lastResult.judgeDetail.length }}
+          </template>
         </div>
         <div v-if="lastResult.judgeDetail?.length" class="case-table-wrap">
           <table class="case-table">
@@ -173,18 +208,20 @@
                 <th>结果</th>
                 <th>得分</th>
                 <th>耗时</th>
+                <th>内存</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="c in lastResult.judgeDetail" :key="c.caseName">
-                <td>{{ c.caseName }}</td>
+                <td class="mono">{{ c.caseName }}</td>
                 <td>
-                  <span class="case-status" :style="{ color: verdictOf(c.status).color }">
+                  <span class="vpill" :class="verdictPillClass(c.status)">
                     {{ verdictOf(c.status).short }}
                   </span>
                 </td>
-                <td>{{ c.fullScore != null ? `${c.score} / ${c.fullScore}` : '—' }}</td>
-                <td>{{ c.timeUsed != null ? c.timeUsed + ' ms' : '—' }}</td>
+                <td class="mono">{{ c.fullScore != null ? `${c.score} / ${c.fullScore}` : '—' }}</td>
+                <td class="mono">{{ c.timeUsed != null ? c.timeUsed + ' ms' : '—' }}</td>
+                <td class="mono">{{ c.memoryUsed != null ? c.memoryUsed + ' KB' : '—' }}</td>
               </tr>
             </tbody>
           </table>
@@ -202,12 +239,13 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Trophy } from '@element-plus/icons-vue'
 import { VueMonacoEditor } from '@guolao/vue-monaco-editor'
 import { getProblemDetail } from '../api/problem'
 import { customTest, getSubmission, submitCode } from '../api/submission'
 import { ratingColor } from '../utils/rating'
 import { renderMarkdown } from '../utils/markdown'
-import { verdictOf } from '../utils/verdict'
+import { verdictOf, verdictText } from '../utils/verdict'
 import { getContestDetail } from '../api/contest'
 import { getContestToken } from '../utils/contestToken'
 
@@ -220,6 +258,9 @@ const contestId = ref(null)
 
 const loading = ref(false)
 const problem = ref(null)
+
+// 标签显隐(洛谷式: 默认隐藏)
+const showTags = ref(false)
 
 // 语言选项: value 与后端 Language 枚举名一致
 const languageOptions = [
@@ -261,13 +302,17 @@ watch(language, (val) => {
   code.value = codeTemplates[val] ?? ''
 })
 
-// 浅色主题, 与 AtCoder 页面风格一致
-const editorOptions = {
-  theme: 'vs',
+// 编辑器主题跟随全站明暗
+const editorTheme = computed(() =>
+  document.documentElement.classList.contains('dark') ? 'vs-dark' : 'vs'
+)
+
+const editorOptions = computed(() => ({
+  theme: editorTheme.value,
   fontSize: 14,
   minimap: { enabled: false },
   automaticLayout: true
-}
+}))
 
 const submitting = ref(false)
 const judging = ref(false)
@@ -277,8 +322,6 @@ const TERMINAL_STATUSES = [
   'ACCEPTED', 'WRONG_ANSWER', 'TIME_LIMIT_EXCEEDED', 'MEMORY_LIMIT_EXCEEDED',
   'RUNTIME_ERROR', 'COMPILE_ERROR', 'SYSTEM_ERROR'
 ]
-
-// AtCoder 式判定展示(共用 utils/verdict.js)
 
 // 判题结果弹窗状态
 const resultVisible = ref(false)
@@ -296,15 +339,44 @@ const totalFullScore = computed(() => {
   return detail.reduce((sum, c) => sum + (c.fullScore ?? 0), 0)
 })
 
+// 判定 -> vpill 样式类(base.css 定义)
+const PILL_CLASS = {
+  ACCEPTED: 'v-ac',
+  WRONG_ANSWER: 'v-wa',
+  TIME_LIMIT_EXCEEDED: 'v-tle',
+  MEMORY_LIMIT_EXCEEDED: 'v-mle',
+  RUNTIME_ERROR: 'v-re',
+  COMPILE_ERROR: 'v-ce',
+  SYSTEM_ERROR: 'v-se',
+  PENDING: 'v-pending',
+  JUDGING: 'v-judging'
+}
+
+function verdictPillClass(status) {
+  return PILL_CLASS[status] ?? 'v-ce'
+}
+
 // 自定义测试状态
 const testInput = ref('')
 const testing = ref(false)
 const testResult = ref(null)
 
+/** 复制文本到剪贴板(样例复制) */
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text)
+    ElMessage.success('已复制到剪贴板')
+  } catch (e) {
+    ElMessage.error('复制失败, 请手动复制')
+  }
+}
+
 async function fetchDetail() {
   loading.value = true
   try {
     problem.value = await getProblemDetail(problemId)
+    // 换题后标签恢复默认隐藏
+    showTags.value = false
   } catch (e) {
   } finally {
     loading.value = false
@@ -418,8 +490,8 @@ onMounted(() => {
 
 <style scoped>
 .problem-detail {
-  background: #fff;
-  min-height: calc(100vh - 44px);
+  background: var(--bg);
+  min-height: calc(100vh - var(--header-height));
 }
 
 .container {
@@ -429,136 +501,202 @@ onMounted(() => {
 }
 
 .back {
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
-/* 居中标题 + 限制信息框 */
-.problem-title {
-  text-align: center;
-  font-size: 24px;
-  font-weight: normal;
-  margin: 8px 0 20px;
-}
-
-.problem-source {
-  text-align: center;
-  color: #888;
-  font-size: 13px;
-  margin: -12px 0 16px;
-}
-
-.rating {
-  font-weight: 600;
-  font-family: Helvetica, Arial, sans-serif;
-}
-
-.limits {
-  border: 1px solid #ddd;
-  padding: 10px 16px;
-  margin-bottom: 28px;
+/* 标题行: 左对齐 + 右侧操作按钮 */
+.title-row {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 48px;
-  color: #333;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
-/* 讨论/题解/提交记录/管理按钮组贴右侧 */
-.limits-actions {
-  margin-left: auto;
+.problem-title {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0;
+  word-break: break-word;
+  flex: 1;
+  min-width: 240px;
+}
+
+.title-actions {
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-shrink: 0;
+}
+
+/* 元信息行 */
+.meta-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  margin: 10px 0 0;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.meta-val {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.rating {
+  font-weight: 700;
+}
+
+/* 标签 */
+.detail-tags-area {
+  margin: 12px 0 0;
+}
+
+.tags-toggle {
+  font-size: 13px;
+}
+
+.detail-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.tag-chip {
+  margin-right: 0;
 }
 
 /* 比赛提交模式横幅 */
 .contest-banner {
-  margin: -14px 0 20px;
-  padding: 8px 14px;
-  background: #f5f9ff;
-  border-left: 3px solid #1a5cc8;
-  border-radius: 0 4px 4px 0;
-  color: #333;
+  margin: 16px 0 0;
+  padding: 10px 14px;
+  background: var(--brand-soft);
+  border: 1px solid var(--brand);
+  border-left-width: 3px;
+  border-radius: var(--radius);
+  color: var(--text);
   font-size: 13px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+}
+
+.contest-banner .el-icon {
+  color: var(--brand);
 }
 
 .banner-link {
   font-size: 13px;
+  margin-left: auto;
+}
+
+/* 题面 */
+.statement {
+  margin-top: 20px;
+  min-height: 80px;
 }
 
 /* 章节标题: 底部细线 */
 .section {
-  margin-top: 28px;
+  margin-top: 32px;
 }
 
 .section h3 {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 600;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 6px;
-  margin: 0 0 12px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+  margin: 0 0 14px;
 }
 
-/* 样例: 样例 N 为组标题, 输入/输出为行内小标签, 内容为圆角边框框 */
-.sample {
-  margin-bottom: 28px;
+/* 样例卡片 */
+.sample-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 20px;
+  overflow: hidden;
 }
 
-.sample-heading {
-  font-size: 16px;
-  font-weight: bold;
-  margin-bottom: 10px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid #eee;
+.sample-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--bg-soft);
+  border-bottom: 1px solid var(--border);
+}
+
+.sample-name {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.sample-copy {
+  display: flex;
+  gap: 14px;
+}
+
+.sample-copy .el-link {
+  font-size: 12.5px;
+}
+
+.sample-io {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
 }
 
 .sample-item {
-  margin-bottom: 10px;
+  min-width: 0;
 }
 
-.sample-label-line {
-  font-size: 13px;
-  color: #666;
-  margin-bottom: 5px;
+.sample-item + .sample-item {
+  border-left: 1px solid var(--border);
+}
+
+.sample-label {
+  background: var(--bg-soft);
+  padding: 5px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  border-bottom: 1px solid var(--border);
 }
 
 .sample-content {
   margin: 0;
-  padding: 10px 14px;
-  border: 1px solid #ddd;
-  border-radius: 3px;
-  background: #fafafa;
-  font-family: Consolas, Monaco, 'Courier New', monospace;
-  font-size: 14px;
+  padding: 12px 16px;
+  background: var(--bg);
+  font-family: var(--font-mono);
+  font-size: 13.5px;
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-all;
+  color: var(--text);
+  max-height: 320px;
+  overflow: auto;
 }
 
-/* 样例解释: 浅蓝提示块(主题蓝左边线 + 浅蓝底 + 圆角) */
+/* 样例解释: 浅蓝提示块 */
 .sample-explain {
-  margin-top: 2px;
-  padding: 10px 14px;
-  background: #f5f9ff;
-  border-left: 3px solid #1a5cc8;
-  border-radius: 0 4px 4px 0;
-  color: #333;
+  padding: 12px 16px;
+  background: var(--brand-soft);
+  border-top: 1px solid var(--border);
+  color: var(--text);
   line-height: 1.7;
 }
 
 .explain-label {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  color: #1a5cc8;
+  color: var(--brand);
   margin-bottom: 4px;
   letter-spacing: 0.5px;
-}
-
-.sample-explain .markdown-body {
-  font-size: 15px;
 }
 
 .sample-explain :deep(p) {
@@ -569,105 +707,131 @@ onMounted(() => {
   margin-top: 6px;
 }
 
-/* 灰条标签(自定义测试区/判题弹窗用, 与样例样式区分) */
-.sample-label {
-  background: #eee;
-  padding: 5px 10px;
-  font-size: 13px;
-  font-weight: 600;
+/* 编辑器卡片 */
+.editor-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }
 
-/* 提交区 */
-.submit-section {
-  border-top: 2px solid #eee;
-  padding-top: 20px;
+.editor-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg-soft);
+  border-bottom: 1px solid var(--border);
 }
 
-.toolbar {
-  margin-bottom: 12px;
+.editor-hint {
+  color: var(--text-3);
+  font-size: 12.5px;
 }
 
 .editor-wrapper {
-  border: 1px solid #ddd;
+  border-bottom: 1px solid var(--border);
 }
 
 .submit-bar {
-  margin-top: 16px;
+  padding: 12px 14px;
   text-align: right;
+  background: var(--bg);
 }
 
-/* 自定义测试区 */
-.test-input {
-  border: 1px solid #ddd;
-  margin-bottom: 12px;
+.submit-bar .el-button {
+  min-width: 110px;
 }
 
-.test-input :deep(.el-textarea__inner) {
+/* 自定义测试卡片 */
+.test-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.test-card .sample-label {
+  border-radius: 0;
+}
+
+.test-card :deep(.el-textarea__inner) {
   border: none;
+  border-radius: 0;
   box-shadow: none;
-  font-family: Consolas, Monaco, 'Courier New', monospace;
+  font-family: var(--font-mono);
   font-size: 13px;
+  padding: 12px 16px;
 }
 
 .test-actions {
-  margin-bottom: 12px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
 }
 
-.test-output pre {
+.test-result {
   margin: 0;
-  padding: 10px 12px;
-  border: 1px solid #ddd;
-  border-top: none;
-  background: #fff;
-  font-family: Consolas, Monaco, 'Courier New', monospace;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  font-family: var(--font-mono);
   font-size: 13px;
   white-space: pre-wrap;
   word-break: break-all;
+  max-height: 300px;
+  overflow: auto;
+  color: var(--text);
 }
 
 .error-label {
-  background: #f2dede;
-  color: #a94442;
+  background: var(--bad-soft);
+  color: var(--bad);
 }
 
 .error-text {
-  color: #d9534f;
+  color: var(--bad);
 }
 
-/* 判题结果弹窗(AtCoder 风格) */
+/* 判题结果弹窗 */
 .verdict {
   text-align: center;
 }
 
 .verdict-short {
-  font-size: 42px;
-  font-weight: bold;
-  font-family: Helvetica, Arial, sans-serif;
+  font-size: 44px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  letter-spacing: 1px;
 }
 
 .verdict-full {
   font-size: 14px;
-  color: #666;
+  color: var(--text-2);
   margin: 4px 0 8px;
 }
 
 .verdict-meta {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
   font-size: 13px;
-  color: #888;
+  color: var(--text-2);
   margin-bottom: 16px;
 }
 
 /* 用例汇总行 */
 .case-summary {
   font-size: 13px;
-  color: #555;
-  margin-bottom: 6px;
+  color: var(--text-2);
+  margin-bottom: 8px;
 }
 
 /* 用例多时表格区域滚动 */
 .case-table-wrap {
   max-height: 280px;
   overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
 }
 
 .case-table {
@@ -677,20 +841,29 @@ onMounted(() => {
 }
 
 .case-table th {
-  background: #eee;
-  border: 1px solid #ddd;
-  padding: 6px 10px;
+  background: var(--bg-soft);
+  border-bottom: 1px solid var(--border);
+  padding: 7px 10px;
   font-weight: 600;
+  color: var(--text-2);
+  font-size: 12px;
+  position: sticky;
+  top: 0;
 }
 
 .case-table td {
-  border: 1px solid #ddd;
-  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  padding: 7px 10px;
   text-align: center;
+  color: var(--text);
 }
 
-.case-status {
-  font-weight: bold;
+.case-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.case-table tbody tr:hover td {
+  background: var(--bg-hover);
 }
 
 .verdict-error {
@@ -701,15 +874,31 @@ onMounted(() => {
 .verdict-error pre {
   margin: 0;
   padding: 10px 12px;
-  border: 1px solid #ddd;
-  border-top: none;
-  background: #fff;
-  font-family: Consolas, Monaco, 'Courier New', monospace;
+  border: 1px solid var(--border);
+  border-radius: 0 0 var(--radius) var(--radius);
+  background: var(--bg);
+  font-family: var(--font-mono);
   font-size: 12px;
   white-space: pre-wrap;
   word-break: break-all;
   max-height: 200px;
   overflow-y: auto;
-  color: #a94442;
+  color: var(--bad);
+}
+
+/* 移动端: 样例并排改上下 */
+@media (max-width: 640px) {
+  .sample-io {
+    grid-template-columns: 1fr;
+  }
+
+  .sample-item + .sample-item {
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
+
+  .title-actions {
+    width: 100%;
+  }
 }
 </style>

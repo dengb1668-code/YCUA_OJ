@@ -2,90 +2,104 @@
   <div class="contest-create">
     <div class="container">
       <el-page-header @back="router.back()" class="back" />
-      <h2>创建比赛</h2>
+      <h2 class="page-title">创建比赛</h2>
 
-      <el-form label-width="90px" class="form">
-        <el-form-item label="标题">
-          <el-input v-model="form.title" maxlength="100" placeholder="比赛标题" />
-        </el-form-item>
-        <el-form-item label="说明">
-          <el-input
-            v-model="form.description"
-            type="textarea"
-            :rows="4"
-            placeholder="比赛说明(支持 Markdown, 可选)"
-          />
-        </el-form-item>
-        <el-form-item label="赛制">
-          <el-radio-group v-model="form.type">
-            <el-radio value="ICPC">ICPC(按解题数+罚时排名)</el-radio>
-            <el-radio value="OI">OI(按总分排名, 赛期隐藏榜单)</el-radio>
-            <el-radio value="IOI">IOI(按总分排名, 实时榜单)</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="时间">
-          <el-date-picker
-            v-model="timeRange"
-            type="datetimerange"
-            start-placeholder="开始时间"
-            end-placeholder="结束时间"
-            format="YYYY-MM-DD HH:mm"
-            value-format="YYYY-MM-DDTHH:mm:ss"
-            style="width: 100%"
-          />
-        </el-form-item>
-        <el-form-item label="参赛密码">
-          <el-input
-            v-model="form.password"
-            placeholder="留空为公开比赛"
-            show-password
-            style="width: 260px"
-          />
-        </el-form-item>
-        <el-form-item label="题目">
-          <el-select
-            v-model="selectedProblemIds"
-            multiple
-            filterable
-            remote
-            reserve-keyword
-            :remote-method="searchProblems"
-            :loading="searching"
-            placeholder="搜索并选择题目(选择顺序即比赛题号 A/B/C...)"
-            style="width: 100%"
-          >
-            <el-option
-              v-for="p in searchOptions"
-              :key="p.id"
-              :label="`#${p.id} ${p.title}`"
-              :value="p.id"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item v-if="selectedProblemIds.length" label="题目顺序">
-          <div class="selected-list">
-            <div v-for="(pid, idx) in selectedProblemIds" :key="pid" class="selected-row">
-              <span class="letter">{{ letters[idx] }}</span>
-              <span class="title">{{ problemTitle(pid) }}</span>
-              <span class="ops">
-                <el-button size="small" text :disabled="idx === 0" @click="move(idx, -1)">上移</el-button>
-                <el-button
-                  size="small"
-                  text
-                  :disabled="idx === selectedProblemIds.length - 1"
-                  @click="move(idx, 1)"
-                >
-                  下移
-                </el-button>
-                <el-button size="small" text type="danger" @click="removeProblem(idx)">移除</el-button>
-              </span>
-            </div>
+      <div class="oj-card form-card">
+        <el-form label-width="90px" class="form">
+          <div class="form-section">
+            <div class="section-title">基本信息</div>
+            <el-form-item label="标题">
+              <el-input v-model="form.title" maxlength="100" placeholder="比赛标题" />
+            </el-form-item>
+            <el-form-item label="说明">
+              <el-input
+                v-model="form.description"
+                type="textarea"
+                :rows="4"
+                placeholder="比赛说明(支持 Markdown, 可选)"
+              />
+            </el-form-item>
           </div>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" :loading="creating" @click="handleCreate">创建比赛</el-button>
-        </el-form-item>
-      </el-form>
+
+          <div class="form-section">
+            <div class="section-title">赛制与时间</div>
+            <el-form-item label="赛制">
+              <el-radio-group v-model="form.type">
+                <el-radio value="ICPC">ICPC(按解题数+罚时排名)</el-radio>
+                <el-radio value="OI">OI(按总分排名, 赛期隐藏榜单)</el-radio>
+                <el-radio value="IOI">IOI(按总分排名, 实时榜单)</el-radio>
+              </el-radio-group>
+            </el-form-item>
+            <el-form-item label="时间">
+              <el-date-picker
+                v-model="timeRange"
+                type="datetimerange"
+                start-placeholder="开始时间"
+                end-placeholder="结束时间"
+                format="YYYY-MM-DD HH:mm"
+                value-format="YYYY-MM-DDTHH:mm:ss"
+                style="width: 100%"
+              />
+            </el-form-item>
+            <el-form-item label="参赛密码">
+              <el-input
+                v-model="form.password"
+                placeholder="留空为公开比赛"
+                show-password
+                style="width: 260px"
+              />
+            </el-form-item>
+          </div>
+
+          <div class="form-section">
+            <div class="section-title">题目</div>
+            <el-form-item label="选择题目">
+              <el-select
+                v-model="selectedProblemIds"
+                multiple
+                filterable
+                remote
+                reserve-keyword
+                :remote-method="searchProblems"
+                :loading="searching"
+                placeholder="搜索并选择题目(选择顺序即比赛题号 A/B/C...)"
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="p in searchOptions"
+                  :key="p.id"
+                  :label="`#${p.id} ${p.title}`"
+                  :value="p.id"
+                />
+              </el-select>
+            </el-form-item>
+            <el-form-item v-if="selectedProblemIds.length" label="题目顺序">
+              <div class="selected-list">
+                <div v-for="(pid, idx) in selectedProblemIds" :key="pid" class="selected-row">
+                  <span class="letter mono">{{ letters[idx] }}</span>
+                  <span class="title">{{ problemTitle(pid) }}</span>
+                  <span class="ops">
+                    <el-button size="small" text :disabled="idx === 0" @click="move(idx, -1)">上移</el-button>
+                    <el-button
+                      size="small"
+                      text
+                      :disabled="idx === selectedProblemIds.length - 1"
+                      @click="move(idx, 1)"
+                    >
+                      下移
+                    </el-button>
+                    <el-button size="small" text type="danger" @click="removeProblem(idx)">移除</el-button>
+                  </span>
+                </div>
+              </div>
+            </el-form-item>
+          </div>
+
+          <el-form-item>
+            <el-button type="primary" :loading="creating" @click="handleCreate">创建比赛</el-button>
+          </el-form-item>
+        </el-form>
+      </div>
     </div>
   </div>
 </template>
@@ -188,8 +202,8 @@ searchProblems('')
 
 <style scoped>
 .contest-create {
-  background: #fff;
-  min-height: calc(100vh - 44px);
+  background: var(--bg);
+  min-height: calc(100vh - var(--header-height));
 }
 
 .container {
@@ -199,30 +213,56 @@ searchProblems('')
 }
 
 .back {
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
-h2 {
-  font-size: 20px;
-  font-weight: normal;
-  margin: 0 0 20px;
+.page-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 18px;
+}
+
+.form-card {
+  padding: 24px 28px;
 }
 
 .form {
   max-width: 720px;
 }
 
+.form-section {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.form-section:last-of-type {
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: none;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-2);
+  letter-spacing: 0.03em;
+  margin: 0 0 16px;
+  text-transform: uppercase;
+}
+
 .selected-list {
   width: 100%;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
 }
 
 .selected-row {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 6px 12px;
-  border-bottom: 1px solid #eee;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
 }
 
 .selected-row:last-child {
@@ -230,8 +270,8 @@ h2 {
 }
 
 .letter {
-  font-weight: 600;
-  color: #1a5cc8;
+  font-weight: 700;
+  color: var(--brand);
   min-width: 24px;
 }
 
@@ -242,5 +282,11 @@ h2 {
 .ops {
   display: flex;
   gap: 4px;
+}
+
+@media (max-width: 640px) {
+  .form-card {
+    padding: 18px 16px;
+  }
 }
 </style>

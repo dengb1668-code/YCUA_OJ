@@ -151,6 +151,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper, Submiss
             vo.setLanguage(s.getLanguage());
             vo.setStatus(s.getStatus());
             vo.setScore(s.getScore());
+            vo.setFailedTestIndex(s.getFailedTestIndex());
             vo.setTimeUsed(s.getTimeUsed());
             vo.setMemoryUsed(s.getMemoryUsed());
             vo.setCreateTime(s.getCreateTime());

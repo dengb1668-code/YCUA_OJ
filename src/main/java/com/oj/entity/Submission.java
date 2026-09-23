@@ -44,6 +44,9 @@ public class Submission {
     /** 得分(计分制, 满分=题目测试点分值总和); 样例回退模式为 100 或 0 */
     private Integer score;
 
+    /** ICPC 模式首个失败测试点序号(列表页显示 "Wrong answer on test N" 用) */
+    private Integer failedTestIndex;
+
     /** 运行耗时(毫秒), 判题完成后写入 */
     private Integer timeUsed;
 
@@ -75,6 +78,8 @@ public class Submission {
     public static class JudgeCase {
         private String caseName;
         private JudgeStatus status;
+        /** 测试点序号(ICPC 模式记 "test N" 的 N; 旧数据反序列化为 null) */
+        private Integer testIndex;
         private Integer timeUsed;
         private Integer memoryUsed;
         /** 该用例得分(计分制; 样例回退模式为 null) */

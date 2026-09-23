@@ -1,7 +1,7 @@
 <template>
   <div class="user-manage">
     <div class="page-head">
-      <h2>用户管理</h2>
+      <h2 class="page-title">用户管理</h2>
       <div class="search-box">
         <el-input
           v-model="keyword"
@@ -15,55 +15,62 @@
       </div>
     </div>
 
-    <el-table v-loading="loading" :data="users">
-      <el-table-column label="ID" width="80">
-        <template #default="{ row }">
-          <span class="muted">{{ row.id }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="用户名" min-width="160">
-        <template #default="{ row }">{{ row.username }}</template>
-      </el-table-column>
-      <el-table-column label="昵称" min-width="140">
-        <template #default="{ row }">{{ row.nickname || '—' }}</template>
-      </el-table-column>
-      <el-table-column label="手机号" width="140">
-        <template #default="{ row }">
-          <span class="muted">{{ row.phone || '—' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="角色" width="110" align="center">
-        <template #default="{ row }">
-          <span class="role" :class="`role-${row.role}`">{{ roleLabel(row.role) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="注册时间" width="170">
-        <template #default="{ row }">
-          <span class="muted">{{ formatTime(row.createTime) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="140" align="center">
-        <template #default="{ row }">
-          <template v-if="row.role === 'OWNER'">
-            <span class="muted">—</span>
+    <div class="table-scroll">
+      <el-table v-loading="loading" :data="users">
+        <el-table-column label="ID" width="80">
+          <template #default="{ row }">
+            <span class="muted mono">{{ row.id }}</span>
           </template>
-          <template v-else>
-            <el-button
-              v-if="row.role === 'USER'"
-              size="small"
-              type="primary"
-              plain
-              @click="setRole(row, 1)"
-            >
-              设为管理员
-            </el-button>
-            <el-button v-else size="small" plain type="danger" @click="setRole(row, 0)">
-              取消管理员
-            </el-button>
+        </el-table-column>
+        <el-table-column label="用户名" min-width="160">
+          <template #default="{ row }">
+            <span class="user-cell">
+              <span class="mini-avatar">{{ (row.username || '?')[0].toUpperCase() }}</span>
+              {{ row.username }}
+            </span>
           </template>
-        </template>
-      </el-table-column>
-    </el-table>
+        </el-table-column>
+        <el-table-column label="昵称" min-width="140">
+          <template #default="{ row }">{{ row.nickname || '—' }}</template>
+        </el-table-column>
+        <el-table-column label="手机号" width="140">
+          <template #default="{ row }">
+            <span class="muted mono">{{ row.phone || '—' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="角色" width="120" align="center">
+          <template #default="{ row }">
+            <span class="role-badge" :class="`role-${row.role}`">{{ roleLabel(row.role) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="注册时间" width="170">
+          <template #default="{ row }">
+            <span class="muted">{{ formatTime(row.createTime) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="140" align="center">
+          <template #default="{ row }">
+            <template v-if="row.role === 'OWNER'">
+              <span class="muted">—</span>
+            </template>
+            <template v-else>
+              <el-button
+                v-if="row.role === 'USER'"
+                size="small"
+                type="primary"
+                plain
+                @click="setRole(row, 1)"
+              >
+                设为管理员
+              </el-button>
+              <el-button v-else size="small" plain type="danger" @click="setRole(row, 0)">
+                取消管理员
+              </el-button>
+            </template>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
 
     <el-pagination
       v-model:current-page="pageNum"
@@ -143,19 +150,21 @@ onMounted(fetchList)
 .user-manage {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 24px 16px 60px;
+  padding: 28px 16px 64px;
 }
 
 .page-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
 }
 
-.page-head h2 {
-  font-size: 20px;
-  font-weight: normal;
+.page-title {
+  font-size: 22px;
+  font-weight: 700;
   margin: 0;
 }
 
@@ -165,45 +174,50 @@ onMounted(fetchList)
 }
 
 .muted {
-  color: #888;
+  color: var(--text-3);
 }
 
-.role {
-  font-size: 13px;
+.user-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.mini-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.role-badge {
+  padding: 1px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 19px;
 }
 
 .role-OWNER {
-  color: #d9534f;
-  font-weight: 600;
+  background: var(--bad-soft);
+  color: var(--bad);
 }
 
 .role-ADMIN {
-  color: #1a5cc8;
-  font-weight: 600;
+  background: var(--brand-soft);
+  color: var(--brand);
 }
 
 .role-USER {
-  color: #666;
-}
-
-/* 表格: AtCoder 细边框风格(与题目列表一致) */
-.user-manage :deep(.el-table) {
-  border: 1px solid #ddd;
-}
-
-.user-manage :deep(.el-table th.el-table__cell) {
-  background: #eee;
-  color: #333;
-  font-weight: 600;
-}
-
-.user-manage :deep(.el-table td.el-table__cell) {
-  border-bottom: 1px solid #ddd;
-}
-
-.user-manage :deep(.el-table .cell) {
-  padding: 8px 12px;
-  font-size: 14px;
+  background: var(--mute-soft);
+  color: var(--mute);
 }
 
 .user-manage :deep(.el-pagination) {

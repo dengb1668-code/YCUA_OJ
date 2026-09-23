@@ -1,58 +1,44 @@
 <template>
   <div class="app">
-    <!-- HDOJ(杭电 OJ)风格全局头部: 航拍横幅 + 蓝色菜单条, 所有页面(含登录)都显示 -->
-    <header class="hdoj-header">
-      <!-- HDOJ 布局: 左淡(校徽+校名+ICPC小logo)右浓(航拍)横幅 -->
-      <div class="banner">
-        <img src="./assets/aerial-banner.png" class="banner-img" alt="校园航拍" />
-        <div class="banner-overlay">
-          <img src="./assets/ycu-logo.png" class="banner-emblem" alt="宜春学院" />
-          <!-- 校名组: 绝对居中 -->
-          <div class="banner-texts">
-            <!-- 毛笔字校名 -->
-            <div class="banner-title">宜春学院</div>
-            <!-- 左: ICPC logo + 英文; 右: Online Judge -->
-            <div class="banner-title-row">
-              <div class="banner-row-left">
-                <img src="./assets/icpc-logo-full.png" class="banner-icpc-logo" alt="ICPC" />
-                <span class="banner-title-en">YICHUN UNIVERSITY</span>
-              </div>
-              <span class="banner-oj">Online Judge</span>
-            </div>
-          </div>
+    <!-- 全局顶栏: 白底 + 细分割线 + 导航下划线激活态 -->
+    <header class="oj-header">
+      <div class="header-inner">
+        <div class="header-left">
+          <router-link to="/problems" class="logo">
+            <span class="logo-mark">&lt;/&gt;</span>
+            <span class="logo-text">YCUAoj</span>
+          </router-link>
+          <nav v-if="userStore.token" class="header-nav">
+            <router-link to="/problems" class="nav-link">题库</router-link>
+            <router-link to="/contests" class="nav-link">比赛</router-link>
+            <router-link to="/submissions" class="nav-link">提交记录</router-link>
+            <router-link to="/discussion" class="nav-link">讨论区</router-link>
+            <router-link to="/profile" class="nav-link">个人主页</router-link>
+          </nav>
         </div>
-      </div>
-      <!-- 未登录不显示菜单条(避免看到提交记录等入口) -->
-      <nav v-if="userStore.token" class="menu-bar">
-        <div class="menu-left">
-          <!-- ICPC 导航 logo(白底片衬托, 仿 HDOJ logo 位) -->
-          <img src="./assets/icpc-logo-nav.png" class="menu-icpc-logo" alt="ICPC" />
-          <router-link to="/problems" class="menu-link">题目列表</router-link>
-          <router-link to="/contests" class="menu-link">比赛</router-link>
-          <router-link to="/submissions" class="menu-link">提交记录</router-link>
-          <router-link to="/profile" class="menu-link">个人主页</router-link>
-          <router-link to="/discussion" class="menu-link">讨论区</router-link>
-          <el-dropdown trigger="hover" class="menu-dropdown" @command="openOj">
-            <span class="menu-link menu-oj">
-              其他 OJ
-              <span class="caret">▾</span>
-            </span>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item v-for="oj in otherOjs" :key="oj.name" :command="oj.url">
-                  {{ oj.name }}
-                </el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-        </div>
-        <div class="menu-right">
-          <!-- 未登录时不显示用户菜单 -->
+        <div class="header-right">
+          <button
+            class="icon-btn"
+            :title="isDark ? '切换到亮色模式' : '切换到暗色模式'"
+            aria-label="切换主题"
+            @click="toggleTheme"
+          >
+            <el-icon :size="16"><Sunny v-if="isDark" /><Moon v-else /></el-icon>
+          </button>
+          <button
+            v-if="userStore.token"
+            class="icon-btn menu-btn"
+            title="菜单"
+            aria-label="菜单"
+            @click="mobileOpen = !mobileOpen"
+          >
+            <el-icon :size="17"><Menu /></el-icon>
+          </button>
           <el-dropdown v-if="userStore.token" trigger="click" @command="handleCommand">
             <span class="user-trigger">
               <span class="avatar">{{ (userStore.username || '?')[0].toUpperCase() }}</span>
               <span class="username">{{ userStore.username }}</span>
-              <span class="caret">▾</span>
+              <el-icon class="caret" :size="12"><ArrowDown /></el-icon>
             </span>
             <template #dropdown>
               <el-dropdown-menu>
@@ -66,23 +52,60 @@
             </template>
           </el-dropdown>
         </div>
-      </nav>
+      </div>
+
+      <!-- 移动端导航抽屉 -->
+      <transition name="drop">
+        <nav v-if="mobileOpen && userStore.token" class="mobile-nav">
+          <router-link to="/problems" class="nav-link" @click="mobileOpen = false">题库</router-link>
+          <router-link to="/contests" class="nav-link" @click="mobileOpen = false">比赛</router-link>
+          <router-link to="/submissions" class="nav-link" @click="mobileOpen = false">提交记录</router-link>
+          <router-link to="/discussion" class="nav-link" @click="mobileOpen = false">讨论区</router-link>
+          <router-link to="/profile" class="nav-link" @click="mobileOpen = false">个人主页</router-link>
+        </nav>
+      </transition>
     </header>
+
     <router-view />
-    <!-- 全局点击特效: 水滴落地 + 涟漪 -->
-    <ClickRipple />
+
+    <footer class="oj-footer">
+      <div class="footer-links">
+        <a v-for="oj in otherOjs" :key="oj.name" :href="oj.url" target="_blank" rel="noopener">
+          {{ oj.name }}
+        </a>
+      </div>
+      <div class="footer-copy">YCUAoj YCUer的算法练习平台</div>
+    </footer>
   </div>
 </template>
 
 <script setup>
-import { useRoute, useRouter } from 'vue-router'
+import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { Moon, Sunny, Menu, ArrowDown } from '@element-plus/icons-vue'
 import { userStore } from './store/user'
-import ClickRipple from './components/ClickRipple.vue'
 
-const route = useRoute()
 const router = useRouter()
 
-// 其他 OJ 跳转链接(新标签页打开)
+// 暗色模式: 首屏由 index.html 内联脚本设置 html.dark, 这里只读状态并持久化切换
+const isDark = ref(document.documentElement.classList.contains('dark'))
+const mobileOpen = ref(false)
+
+function toggleTheme() {
+  isDark.value = !isDark.value
+  document.documentElement.classList.toggle('dark', isDark.value)
+  try {
+    localStorage.setItem('oj_theme', isDark.value ? 'dark' : 'light')
+  } catch (e) {}
+  updateThemeColor()
+}
+
+function updateThemeColor() {
+  const meta = document.querySelector('meta[name="theme-color"]:not([media])')
+  if (meta) meta.setAttribute('content', isDark.value ? '#10131a' : '#ffffff')
+}
+
+// 其他 OJ 跳转链接(页脚外链)
 const otherOjs = [
   { name: '洛谷', url: 'https://www.luogu.com.cn/' },
   { name: '牛客', url: 'https://www.nowcoder.com/' },
@@ -105,287 +128,144 @@ function handleCommand(command) {
   }
 }
 
-function openOj(url) {
-  window.open(url, '_blank')
-}
-
-
-
+onMounted(updateThemeColor)
 </script>
 
 <style>
-/* ============ 全局主题: HDOJ(杭电 OJ)蓝 ============ */
-:root {
-  /* 主色: HDOJ 经典蓝 #1A5CC8 */
-  --el-color-primary: #1a5cc8;
-  --el-color-primary-light-3: #4a7dd3;
-  --el-color-primary-light-5: #7b9fdf;
-  --el-color-primary-light-7: #a8c0eb;
-  --el-color-primary-light-8: #bcd0f1;
-  --el-color-primary-light-9: #e0eafa;
-  --el-color-primary-dark-2: #154aa0;
-}
-
-body {
-  margin: 0;
-  background: #fff;
-  font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  font-size: 14px;
-  color: #333;
-}
-
-a {
-  color: #1a5cc8;
-  text-decoration: none;
-}
-
-a:hover {
-  text-decoration: underline;
-}
-
-/* HDOJ 风格表格: 蓝底白字表头 */
-.el-table th.el-table__cell {
-  background: #1a5cc8 !important;
-  color: #fff !important;
-  font-weight: bold;
-}
-
-/* 点击按钮/链接后不残留焦点蓝框(悬浮/波纹特效不受影响) */
-.el-button:focus-visible,
-.el-link:focus-visible,
-.el-button:focus {
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-/* 悬浮特效: 表格行 hover 上浮 + 高亮 */
-.el-table .el-table__body tr {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.el-table .el-table__body tr:hover {
-  transform: translateY(-2px);
-  position: relative;
-  z-index: 1;
-}
-
-.el-table .el-table__body tr:hover > td.el-table__cell {
-  background: #eef4ff !important;
-}
-
-/* ============ HDOJ 头部: 蓝边框 + 航拍横幅 + 蓝菜单条 ============ */
-.app .hdoj-header {
-  max-width: 1100px;
-  margin: 0 auto;
-  border: 1px solid #1a5cc8;
-}
-
-/* 航拍蓝渐变横幅 */
-.app .banner {
-  position: relative;
-  height: 220px;
-  background: #fff;
-  overflow: hidden;
-}
-
-.app .banner-img {
-  width: 100%;
-  height: 220px;
-  object-fit: cover;
-  display: block;
-}
-
-.app .banner-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 0 24px;
-}
-
-/* 左侧淡区: ICPC logo + 校名(英文对齐中文) */
-.app .banner-left {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-}
-
-.app .banner-texts {
-  flex: 1;
+/* ============ 全局: 布局骨架 ============ */
+.app {
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 6px;
 }
 
-/* ICPC 导航 logo(HDOJ logo 位) */
-.app .banner-icpc-logo {
-  height: 52px;
-  width: auto;
-  flex-shrink: 0;
-  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.95));
+.app .oj-header {
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
-/* 校徽圆形徽章(右侧, HDOJ 右彩标位) */
-.app .banner-emblem {
-  width: 128px;
-  height: 128px;
-  object-fit: cover;
-  border-radius: 50%;
-  border: 3px solid #fff;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
-}
-
-/* 校名深色字(左侧淡区可读), 英文对齐中文 */
-.app .banner-title {
-  color: #0f172a;
-  font-size: 56px;
-  font-family: 'STXingkai', '华文行楷', 'Xingkai SC', 'STKaiti', 'KaiTi', '楷体', 'Microsoft YaHei', serif;
-  letter-spacing: 16px;
-  text-indent: 16px;
-  line-height: 1.15;
-  /* 黑体淡白边: 白色细描边 */
-  text-shadow:
-    -1px -1px 0 rgba(255, 255, 255, 0.85),
-    1px -1px 0 rgba(255, 255, 255, 0.85),
-    -1px 1px 0 rgba(255, 255, 255, 0.85),
-    1px 1px 0 rgba(255, 255, 255, 0.85),
-    0 0 8px rgba(255, 255, 255, 0.7);
-}
-
-.app .banner-title-row {
+.app .header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  height: var(--header-height);
+  padding: 0 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 100%;
-  flex-wrap: nowrap;
 }
 
-.app .banner-row-left {
+.app .header-left {
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
+  gap: 28px;
+  min-width: 0;
 }
 
-.app .banner-title-en {
-  color: #0f172a;
-  font-size: 20px;
-  letter-spacing: 3px;
+/* ---- logo ---- */
+.app .logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
   white-space: nowrap;
   flex-shrink: 0;
-  font-family: Roboto, Helvetica, Arial, sans-serif;
-  text-shadow:
-    -1px -1px 0 rgba(255, 255, 255, 0.85),
-    1px -1px 0 rgba(255, 255, 255, 0.85),
-    -1px 1px 0 rgba(255, 255, 255, 0.85),
-    1px 1px 0 rgba(255, 255, 255, 0.85),
-    0 0 8px rgba(255, 255, 255, 0.7);
 }
 
-/* Online Judge: 白色字体, 在英文右边 */
-.app .banner-oj {
-  color: #fff;
-  font-size: 32px;
-  font-weight: bold;
-  letter-spacing: 2px;
-  white-space: nowrap;
-  flex-shrink: 0;
-  font-family: Roboto, Helvetica, Arial, sans-serif;
-  text-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.55),
-    0 0 10px rgba(0, 0, 0, 0.35);
-}
-
-/* 蓝色菜单条 */
-.app .menu-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: #1a5cc8;
-  height: 34px;
-  padding: 0 6px;
-}
-
-.app .menu-left {
-  display: flex;
-  align-items: center;
-}
-
-/* 菜单条 ICPC 小 logo: 白底圆角片 */
-.app .menu-icpc-logo {
-  height: 22px;
-  width: auto;
-  background: #fff;
-  border-radius: 3px;
-  padding: 2px 4px;
-  margin: 0 10px 0 4px;
-}
-
-.app .menu-link {
-  color: #fff;
-  font-size: 14px;
-  line-height: 34px;
-  padding: 0 14px;
-  display: inline-block;
-  position: relative;
-  transition: transform 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
-}
-
-.app .menu-link:hover,
-.app .menu-link.router-link-active {
-  background: #154aa0;
+.app .logo:hover {
   text-decoration: none;
+}
+
+.app .logo-mark {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: var(--brand);
   color: #fff;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: -0.5px;
 }
 
-/* 悬浮特效: 菜单项轻微上浮 + 底部亮蓝下划线动画 */
-.app .menu-link:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+.app .logo-text {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
-.app .menu-link::after {
+/* ---- 导航: 下划线激活态 ---- */
+.app .header-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.app .nav-link {
+  position: relative;
+  color: var(--text-2);
+  font-size: 14px;
+  padding: 13px 12px;
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+
+.app .nav-link:hover {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.app .nav-link.router-link-active {
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.app .nav-link.router-link-active::after {
   content: '';
   position: absolute;
-  left: 14px;
-  right: 14px;
-  bottom: 2px;
+  left: 12px;
+  right: 12px;
+  bottom: 0;
   height: 2px;
-  background: #4da3ff;
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.25s ease;
+  border-radius: 1px;
+  background: var(--brand);
 }
 
-.app .menu-link:hover::after,
-.app .menu-link.router-link-active::after {
-  transform: scaleX(1);
-}
-
-.app .menu-oj::after {
-  display: none;
-}
-
-.app .menu-dropdown {
+/* ---- 右侧: 主题开关 + 用户 ---- */
+.app .header-right {
   display: flex;
   align-items: center;
-  height: 34px;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
-.app .menu-oj {
+.app .icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-2);
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  outline: none;
+  transition: background 0.15s, color 0.15s;
 }
 
-.app .menu-right {
-  display: flex;
-  align-items: center;
+.app .icon-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.app .menu-btn {
+  display: none;
 }
 
 .app .user-trigger {
@@ -393,32 +273,193 @@ a:hover {
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  color: #fff;
+  color: var(--text);
   outline: none;
-  padding: 0 10px;
-  line-height: 34px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.app .user-trigger:hover {
+  background: var(--bg-hover);
 }
 
 .app .avatar {
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: #fff;
-  color: #1a5cc8;
+  background: var(--brand);
+  color: #fff;
   font-size: 13px;
-  font-weight: bold;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .app .username {
-  color: #fff;
   font-size: 14px;
+  font-weight: 600;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .app .caret {
-  color: rgba(255, 255, 255, 0.75);
-  font-size: 11px;
+  color: var(--text-3);
+}
+
+/* ---- 移动端导航抽屉 ---- */
+.app .mobile-nav {
+  display: none;
+  flex-direction: column;
+  padding: 6px 12px 10px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.app .mobile-nav .nav-link {
+  padding: 10px 12px;
+  border-radius: 6px;
+}
+
+.app .mobile-nav .nav-link.router-link-active {
+  background: var(--brand-soft);
+}
+
+.app .mobile-nav .nav-link.router-link-active::after {
+  display: none;
+}
+
+.drop-enter-active,
+.drop-leave-active {
+  transition: opacity 0.15s;
+}
+
+.drop-enter-from,
+.drop-leave-to {
+  opacity: 0;
+}
+
+/* ---- 页脚 ---- */
+.app .oj-footer {
+  margin-top: auto;
+  padding: 24px 16px 32px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+
+.app .footer-links {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  margin-bottom: 10px;
+}
+
+.app .footer-links a {
+  color: var(--text-3);
+  font-size: 13px;
+}
+
+.app .footer-links a:hover {
+  color: var(--brand);
+}
+
+.app .footer-copy {
+  color: var(--text-3);
+  font-size: 12px;
+  font-family: var(--font-mono);
+}
+
+/* ---- 认证页共享卡片(Login/Register/Forgot 共用) ---- */
+.auth-page {
+  flex: 1;
+  background: var(--bg-soft);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 64px 16px 80px;
+}
+
+.auth-card {
+  width: 400px;
+  max-width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 32px 32px 28px;
+  box-shadow: var(--shadow-md);
+}
+
+.auth-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.auth-logo .logo-mark {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--brand);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: -0.5px;
+}
+
+.auth-logo .logo-text {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.auth-title {
+  text-align: center;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 6px;
+}
+
+.auth-subtitle {
+  text-align: center;
+  color: var(--text-3);
+  font-size: 13px;
+  margin: 0 0 24px;
+}
+
+/* ---- 移动端: 隐藏行内导航, 显示菜单按钮 ---- */
+@media (max-width: 820px) {
+  .app .header-nav {
+    display: none;
+  }
+
+  .app .menu-btn {
+    display: flex;
+  }
+
+  .app .mobile-nav {
+    display: flex;
+  }
+}
+
+@media (max-width: 480px) {
+  .app .username {
+    display: none;
+  }
+
+  .app .logo-text {
+    font-size: 16px;
+  }
 }
 </style>

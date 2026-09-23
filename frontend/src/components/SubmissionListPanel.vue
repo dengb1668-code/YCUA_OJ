@@ -5,66 +5,86 @@
         <el-option label="全部状态" value="" />
         <el-option v-for="opt in statusOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
       </el-select>
+      <el-button plain :icon="Refresh" circle title="刷新" @click="fetchList" />
     </div>
 
-    <el-table v-loading="loading" :data="submissions">
-      <el-table-column label="提交ID" width="90">
-        <template #default="{ row }">
-          <span class="muted">#{{ row.id }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column v-if="mode !== 'mine'" label="用户" width="140">
-        <template #default="{ row }">
-          <span>{{ row.username }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column v-if="mode === 'mine'" label="题目" min-width="220">
-        <template #default="{ row }">
-          <el-link type="primary" @click="router.push(`/problems/${row.problemId}`)">
-            {{ row.problemTitle }}
-          </el-link>
-        </template>
-      </el-table-column>
-      <el-table-column v-else label="题目" min-width="220">
-        <template #default="{ row }">
-          <el-link type="primary" @click="router.push(`/problems/${row.problemId}`)">
-            {{ row.displayId ? row.displayId + ' - ' : '' }}{{ row.problemTitle }}
-          </el-link>
-        </template>
-      </el-table-column>
-      <el-table-column label="语言" width="100">
-        <template #default="{ row }">{{ languageLabel(row.language) }}</template>
-      </el-table-column>
-      <el-table-column label="判定" width="100">
-        <template #default="{ row }">
-          <span class="case-status" :style="{ color: verdictOf(row.status).color }">
-            {{ verdictOf(row.status).short }}
-          </span>
-        </template>
-      </el-table-column>
-      <el-table-column label="得分" width="80">
-        <template #default="{ row }">
-          {{ row.score != null ? row.score : '—' }}
-        </template>
-      </el-table-column>
-      <el-table-column label="耗时" width="110">
-        <template #default="{ row }">
-          {{ row.timeUsed != null ? row.timeUsed + ' ms' : '—' }}
-        </template>
-      </el-table-column>
-      <el-table-column label="提交时间" width="170">
-        <template #default="{ row }">
-          <span class="muted">{{ formatTime(row.createTime) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column v-if="mode !== 'mine'" label="操作" width="110" align="center">
-        <template #default="{ row }">
-          <el-button size="small" plain :disabled="!row.canViewCode" @click="openCode(row)">
-            {{ row.canViewCode ? '查看代码' : 'AC后可看' }}
-          </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <div class="table-scroll">
+      <el-table v-loading="loading" :data="submissions">
+        <el-table-column label="ID" width="80">
+          <template #default="{ row }">
+            <span class="mono sub-id">#{{ row.id }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column v-if="mode !== 'mine'" label="用户" width="130">
+          <template #default="{ row }">
+            <span class="user-cell">
+              <span class="mini-avatar">{{ (row.username || '?')[0].toUpperCase() }}</span>
+              {{ row.username }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column v-if="mode === 'mine'" label="题目" min-width="220">
+          <template #default="{ row }">
+            <el-link type="primary" :underline="false" @click="router.push(`/problems/${row.problemId}`)">
+              {{ row.problemTitle }}
+            </el-link>
+          </template>
+        </el-table-column>
+        <el-table-column v-else label="题目" min-width="220">
+          <template #default="{ row }">
+            <el-link type="primary" :underline="false" @click="router.push(`/problems/${row.problemId}`)">
+              <span v-if="row.displayId" class="mono display-id">{{ row.displayId }}</span>
+              {{ row.problemTitle }}
+            </el-link>
+          </template>
+        </el-table-column>
+        <el-table-column label="语言" width="110">
+          <template #default="{ row }">
+            <span class="lang-tag">{{ languageLabel(row.language) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="判定" width="110">
+          <template #default="{ row }">
+            <el-tooltip
+              :disabled="row.failedTestIndex == null"
+              :content="verdictText(row.status, row.failedTestIndex)"
+              placement="top"
+            >
+              <span class="vpill" :class="pillClass(row.status)">
+                {{ verdictOf(row.status).short }}
+              </span>
+            </el-tooltip>
+          </template>
+        </el-table-column>
+        <el-table-column label="得分" width="90">
+          <template #default="{ row }">
+            <span class="mono muted">{{ row.score != null ? row.score : '—' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="耗时" width="110">
+          <template #default="{ row }">
+            <span class="mono muted">{{ row.timeUsed != null ? row.timeUsed + ' ms' : '—' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="内存" width="110">
+          <template #default="{ row }">
+            <span class="mono muted">{{ row.memoryUsed != null ? row.memoryUsed + ' KB' : '—' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="提交时间" width="170">
+          <template #default="{ row }">
+            <span class="muted">{{ formatTime(row.createTime) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column v-if="mode !== 'mine'" label="操作" width="110" align="center">
+          <template #default="{ row }">
+            <el-button size="small" plain :disabled="!row.canViewCode" @click="openCode(row)">
+              {{ row.canViewCode ? '查看代码' : 'AC后可看' }}
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
 
     <el-pagination
       v-model:current-page="pageNum"
@@ -78,11 +98,17 @@
     <el-dialog v-model="codeVisible" title="提交代码" width="720px" align-center>
       <div v-if="codeDetail">
         <div class="code-meta">
-          <span>提交 #{{ codeDetail.id }}</span>
-          <span>{{ languageLabel(codeDetail.language) }}</span>
-          <span v-if="codeDetail.status" :style="{ color: verdictOf(codeDetail.status).color }">
-            {{ verdictOf(codeDetail.status).label }}
+          <span class="mono">#{{ codeDetail.id }}</span>
+          <span class="lang-tag">{{ languageLabel(codeDetail.language) }}</span>
+          <span
+            v-if="codeDetail.status"
+            class="vpill"
+            :class="pillClass(codeDetail.status)"
+          >
+            {{ verdictOf(codeDetail.status).short }}
           </span>
+          <span class="mono muted" v-if="codeDetail.timeUsed != null">{{ codeDetail.timeUsed }} ms</span>
+          <span class="mono muted" v-if="codeDetail.memoryUsed != null">{{ codeDetail.memoryUsed }} KB</span>
         </div>
         <pre class="code-block">{{ codeDetail.code || '(无权限查看代码)' }}</pre>
         <div v-if="codeDetail.errorMessage" class="error-block">
@@ -98,18 +124,20 @@
                 <th>结果</th>
                 <th>得分</th>
                 <th>耗时</th>
+                <th>内存</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="c in codeDetail.judgeDetail" :key="c.caseName">
-                <td>{{ c.caseName }}</td>
+                <td class="mono">{{ c.caseName }}</td>
                 <td>
-                  <span :style="{ color: verdictOf(c.status).color }">
+                  <span class="vpill" :class="pillClass(c.status)">
                     {{ verdictOf(c.status).short }}
                   </span>
                 </td>
-                <td>{{ c.fullScore != null ? `${c.score} / ${c.fullScore}` : '—' }}</td>
-                <td>{{ c.timeUsed != null ? c.timeUsed + ' ms' : '—' }}</td>
+                <td class="mono">{{ c.fullScore != null ? `${c.score} / ${c.fullScore}` : '—' }}</td>
+                <td class="mono">{{ c.timeUsed != null ? c.timeUsed + ' ms' : '—' }}</td>
+                <td class="mono">{{ c.memoryUsed != null ? c.memoryUsed + ' KB' : '—' }}</td>
               </tr>
             </tbody>
           </table>
@@ -122,8 +150,9 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { Refresh } from '@element-plus/icons-vue'
 import { getSubmission, getSubmissions } from '../api/submission'
-import { formatTime, languageLabel, verdictOf } from '../utils/verdict'
+import { formatTime, languageLabel, verdictOf, verdictText } from '../utils/verdict'
 
 const props = defineProps({
   /** 'mine' | 'problem' | 'contest' */
@@ -153,6 +182,23 @@ const statusOptions = [
   { value: 'SYSTEM_ERROR', label: 'SE' },
   { value: 'PENDING', label: 'Pending' }
 ]
+
+// 判定 -> vpill 样式类(base.css 定义)
+const PILL_CLASS = {
+  ACCEPTED: 'v-ac',
+  WRONG_ANSWER: 'v-wa',
+  TIME_LIMIT_EXCEEDED: 'v-tle',
+  MEMORY_LIMIT_EXCEEDED: 'v-mle',
+  RUNTIME_ERROR: 'v-re',
+  COMPILE_ERROR: 'v-ce',
+  SYSTEM_ERROR: 'v-se',
+  PENDING: 'v-pending',
+  JUDGING: 'v-judging'
+}
+
+function pillClass(status) {
+  return PILL_CLASS[status] ?? 'v-ce'
+}
 
 // 查看代码弹窗
 const codeVisible = ref(false)
@@ -202,35 +248,45 @@ onMounted(fetchList)
 
 <style scoped>
 .filter-bar {
-  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
 }
 
 .muted {
-  color: #888;
+  color: var(--text-3);
 }
 
-.case-status {
+.sub-id {
+  color: var(--text-3);
+  font-size: 13px;
+}
+
+.display-id {
+  color: var(--brand);
   font-weight: 600;
+  margin-right: 4px;
 }
 
-/* 表格: AtCoder 细边框风格(与题目列表一致) */
-.submission-panel :deep(.el-table) {
-  border: 1px solid #ddd;
+.user-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
 }
 
-.submission-panel :deep(.el-table th.el-table__cell) {
-  background: #eee;
-  color: #333;
-  font-weight: 600;
-}
-
-.submission-panel :deep(.el-table td.el-table__cell) {
-  border-bottom: 1px solid #ddd;
-}
-
-.submission-panel :deep(.el-table .cell) {
-  padding: 8px 12px;
-  font-size: 14px;
+.mini-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .submission-panel :deep(.el-pagination) {
@@ -241,39 +297,29 @@ onMounted(fetchList)
 /* 代码弹窗 */
 .code-meta {
   display: flex;
-  gap: 16px;
-  color: #666;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-2);
   font-size: 13px;
-  margin-bottom: 8px;
-}
-
-.code-block {
-  margin: 0;
-  padding: 12px;
-  background: #f5f5f5;
-  border: 1px solid #ddd;
-  font-family: Consolas, Monaco, monospace;
-  font-size: 13px;
-  white-space: pre-wrap;
-  word-break: break-all;
-  max-height: 400px;
-  overflow-y: auto;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
 }
 
 .block-label {
   font-size: 13px;
   font-weight: 600;
-  color: #555;
-  margin: 12px 0 6px;
+  color: var(--text-2);
+  margin: 14px 0 8px;
 }
 
 .error-block pre {
   margin: 0;
   padding: 10px 12px;
-  border: 1px solid #ddd;
-  background: #fff;
-  color: #a94442;
-  font-family: Consolas, Monaco, monospace;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-soft);
+  color: var(--bad);
+  font-family: var(--font-mono);
   font-size: 12px;
   white-space: pre-wrap;
   word-break: break-all;
@@ -285,18 +331,28 @@ onMounted(fetchList)
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
 }
 
 .case-table th {
-  background: #eee;
-  border: 1px solid #ddd;
-  padding: 6px 10px;
+  background: var(--bg-soft);
+  border-bottom: 1px solid var(--border);
+  padding: 7px 10px;
   font-weight: 600;
+  color: var(--text-2);
+  font-size: 12px;
 }
 
 .case-table td {
-  border: 1px solid #ddd;
-  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  padding: 7px 10px;
   text-align: center;
+  color: var(--text);
+}
+
+.case-table tbody tr:last-child td {
+  border-bottom: none;
 }
 </style>

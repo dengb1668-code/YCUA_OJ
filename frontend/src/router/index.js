@@ -150,4 +150,9 @@ router.beforeEach((to) => {
   }
 })
 
+// 路由切换后写入浏览器标题
+router.afterEach((to) => {
+  document.title = to.meta.title ? `${to.meta.title} - YCUAoj` : 'YCUAoj'
+})
+
 export default router

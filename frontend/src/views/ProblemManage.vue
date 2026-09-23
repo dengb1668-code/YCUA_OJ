@@ -5,7 +5,7 @@
       <h2 class="page-title">题目管理</h2>
 
       <!-- 题面编辑 -->
-      <div v-if="problem" class="manage-section">
+      <div v-if="problem" class="oj-card manage-section">
         <h3 class="section-h">题面</h3>
         <ProblemForm
           :initial="problem"
@@ -16,7 +16,7 @@
       </div>
 
       <!-- 测试数据配置(洛谷式数据点配置) -->
-      <div class="manage-section">
+      <div class="oj-card manage-section">
         <h3 class="section-h">
           测试数据
           <span class="total-score">满分 {{ totalScore }}</span>
@@ -115,7 +115,7 @@
       </div>
 
       <!-- 危险操作 -->
-      <div class="manage-section">
+      <div class="oj-card manage-section">
         <h3 class="section-h">危险操作</h3>
         <el-button type="danger" plain @click="handleDeleteProblem">删除题目</el-button>
         <div class="danger-hint">
@@ -392,8 +392,8 @@ onMounted(fetchAll)
 
 <style scoped>
 .problem-manage {
-  background: #fff;
-  min-height: calc(100vh - 44px);
+  background: var(--bg);
+  min-height: calc(100vh - var(--header-height));
 }
 
 .container {
@@ -403,32 +403,32 @@ onMounted(fetchAll)
 }
 
 .back {
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 .page-title {
-  text-align: center;
   font-size: 22px;
-  font-weight: normal;
-  margin: 8px 0 20px;
+  font-weight: 700;
+  margin: 0 0 18px;
 }
 
 .manage-section {
-  margin-bottom: 36px;
+  margin-bottom: 20px;
+  padding: 20px 24px;
 }
 
 .danger-hint {
   margin-top: 8px;
-  color: #999;
+  color: var(--text-3);
   font-size: 13px;
 }
 
 .section-h {
   font-size: 16px;
-  font-weight: 600;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 6px;
-  margin: 0 0 12px;
+  font-weight: 700;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 10px;
+  margin: 0 0 14px;
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -437,7 +437,8 @@ onMounted(fetchAll)
 .total-score {
   font-size: 13px;
   font-weight: normal;
-  color: #888;
+  color: var(--text-3);
+  font-family: var(--font-mono);
 }
 
 .empty-alert {
@@ -454,7 +455,7 @@ onMounted(fetchAll)
 
 .upload-hint {
   font-size: 12px;
-  color: #999;
+  color: var(--text-3);
   margin-bottom: 16px;
 }
 
@@ -464,29 +465,34 @@ onMounted(fetchAll)
 
 /* 灰条标签 + 等宽输入框(与题目详情页样式一致) */
 .sample-label {
-  background: #eee;
+  background: var(--bg-soft);
+  color: var(--text-2);
   padding: 5px 10px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
 }
 
 .case-form {
-  border: 1px solid #ddd;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
 }
 
 .mono-input :deep(.el-textarea__inner) {
   border: none;
   border-radius: 0;
   box-shadow: none;
-  font-family: Consolas, Monaco, 'Courier New', monospace;
+  font-family: var(--font-mono);
   font-size: 13px;
+  background: var(--bg);
+  color: var(--text);
 }
 
 .config-row {
   display: flex;
   gap: 12px;
   padding: 10px 12px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--border);
 }
 
 .config-row > div {
@@ -495,6 +501,13 @@ onMounted(fetchAll)
 
 .config-row .sample-label {
   margin-bottom: 6px;
-  background: #f5f5f5;
+  background: transparent;
+  padding-left: 0;
+}
+
+@media (max-width: 640px) {
+  .manage-section {
+    padding: 16px 14px;
+  }
 }
 </style>

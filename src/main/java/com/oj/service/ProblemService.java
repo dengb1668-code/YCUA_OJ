@@ -6,14 +6,17 @@ import com.oj.dto.ProblemCreateRequest;
 import com.oj.entity.Problem;
 import com.oj.vo.ProblemListVO;
 
+import java.util.List;
+
 public interface ProblemService extends IService<Problem> {
 
     /**
      * 分页查询题目列表(不含 description/samples 大字段)
      *
+     * @param tags  标签筛选(可空, 多标签取交集)
      * @param userId 当前用户ID, 用于聚合每题做题状态
      */
-    Page<ProblemListVO> pageProblems(long pageNum, long pageSize, String keyword, Long userId);
+    Page<ProblemListVO> pageProblems(long pageNum, long pageSize, String keyword, List<String> tags, Long userId);
 
     /**
      * 查询单题详情, 不存在时抛出 IllegalArgumentException

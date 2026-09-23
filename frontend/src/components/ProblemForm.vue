@@ -1,7 +1,13 @@
 <template>
   <div class="problem-form">
     <!-- 左: 编辑表单 -->
-    <div class="form-col">
+    <div class="form-col" :class="{ 'full-width': previewMode === 'edit' }">
+      <div class="preview-switch">
+        <el-radio-group v-model="previewMode" size="small">
+          <el-radio value="split">分屏实时预览</el-radio>
+          <el-radio value="edit">仅编辑</el-radio>
+        </el-radio-group>
+      </div>
       <el-form label-width="110px">
         <el-form-item label="标题" required>
           <el-input v-model="form.title" placeholder="如: A+B Problem" />
@@ -10,13 +16,13 @@
           <el-input v-model="form.source" placeholder="可选, 如: 洛谷 P1001" />
         </el-form-item>
         <el-form-item label="题目描述" required>
-          <el-input v-model="form.description" type="textarea" :rows="8" placeholder="支持 Markdown 与 $LaTeX$ 公式" />
+          <MdToolbar v-model="form.description" :rows="8" placeholder="支持 Markdown 与 $LaTeX$ 公式" />
         </el-form-item>
         <el-form-item label="输入格式">
-          <el-input v-model="form.inputDescription" type="textarea" :rows="3" placeholder="支持 Markdown 与 $LaTeX$" />
+          <MdToolbar v-model="form.inputDescription" :rows="3" placeholder="支持 Markdown 与 $LaTeX$" />
         </el-form-item>
         <el-form-item label="输出格式">
-          <el-input v-model="form.outputDescription" type="textarea" :rows="3" placeholder="支持 Markdown 与 $LaTeX$" />
+          <MdToolbar v-model="form.outputDescription" :rows="3" placeholder="支持 Markdown 与 $LaTeX$" />
         </el-form-item>
 
         <el-form-item label="样例">
@@ -35,9 +41,8 @@
               </div>
               <div class="sample-explain-input">
                 <div class="col-label">样例 {{ idx + 1 }} 解释(可选, 支持 Markdown)</div>
-                <el-input
+                <MdToolbar
                   v-model="s.explanation"
-                  type="textarea"
                   :rows="2"
                   placeholder="如: 1 + 2 = 3，直接输出两数之和。"
                 />
@@ -64,6 +69,25 @@
           />
           <span class="unit">Codeforces 难度分, 如 800 / 1200 / 1900 / 2400</span>
         </el-form-item>
+        <el-form-item label="判题模式">
+          <el-radio-group v-model="form.judgeMode">
+            <el-radio value="ICPC">ICPC</el-radio>
+            <el-radio value="IOI">IOI</el-radio>
+          </el-radio-group>
+          <div class="mode-hint">ICPC: 无部分分, 第一个失败测试点即停(CF 式); IOI: 逐测试点部分分</div>
+        </el-form-item>
+        <el-form-item label="标签">
+          <el-select
+            v-model="form.tags"
+            multiple
+            filterable
+            :multiple-limit="5"
+            placeholder="最多选 5 个标签"
+            style="width: 100%"
+          >
+            <el-option v-for="t in allTags" :key="t" :label="t" :value="t" />
+          </el-select>
+        </el-form-item>
 
         <el-form-item>
           <el-button type="primary" :loading="submitting" @click="handleSubmit">{{ submitText }}</el-button>
@@ -71,19 +95,30 @@
       </el-form>
     </div>
 
-    <!-- 右: 实时预览 -->
-    <div class="preview-col">
+    <!-- 右: 实时预览(可切换为仅编辑模式) -->
+    <div v-if="previewMode === 'split'" class="preview-col">
       <div class="preview-panel">
         <div class="preview-head">实时预览</div>
         <h2 class="problem-title">{{ form.title.trim() || '题目标题' }}</h2>
         <div v-if="form.source" class="problem-source">{{ form.source }}</div>
         <div class="limits">
-          <div>
-            难度:
-            <span class="rating" :style="{ color: ratingColor(form.difficulty) }">{{ form.difficulty }}</span>
-          </div>
-          <div>时间限制: {{ (form.timeLimit / 1000).toFixed(2) }} sec</div>
-          <div>内存限制: {{ form.memoryLimit }} MB</div>
+          <span>
+            时间限制
+            <b class="mono">{{ (form.timeLimit / 1000).toFixed(2) }} s</b>
+          </span>
+          <span>
+            内存限制
+            <b class="mono">{{ form.memoryLimit }} MB</b>
+          </span>
+          <span>{{ form.judgeMode }}</span>
+          <span>
+            难度
+            <b class="mono rating" :style="{ color: ratingColor(form.difficulty) }">{{ form.difficulty }}</b>
+          </span>
+        </div>
+
+        <div v-if="form.tags.length" class="preview-tags">
+          <el-tag v-for="t in form.tags" :key="t" size="small" class="preview-tag">{{ t }}</el-tag>
         </div>
 
         <div class="markdown-body" v-html="renderMarkdown(form.description)"></div>
@@ -100,7 +135,7 @@
 
         <div v-if="filledSamples.length" class="section">
           <h3>样例</h3>
-          <div v-for="(sample, idx) in filledSamples" :key="idx" class="sample">
+          <div v-for="(sample, idx) in filledSamples" :key="idx" class="sample-card">
             <div class="sample-heading">样例 {{ idx + 1 }}</div>
             <div class="sample-item">
               <div class="sample-label-line">输入</div>
@@ -122,10 +157,12 @@
 </template>
 
 <script setup>
-import { computed, reactive, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { renderMarkdown } from '../utils/markdown'
 import { ratingColor } from '../utils/rating'
+import { getProblemTags } from '../api/problem'
+import MdToolbar from './MdToolbar.vue'
 
 /**
  * 题面表单(创建与编辑共用): 左侧编辑 + 右侧实时预览
@@ -139,6 +176,16 @@ const props = defineProps({
 })
 const emit = defineEmits(['submit'])
 
+// 固定中文标签集(后端返回; 加载失败不阻塞表单)
+const allTags = ref([])
+onMounted(async () => {
+  try {
+    allTags.value = await getProblemTags()
+  } catch {
+    /* 忽略, 表单其余功能不受影响 */
+  }
+})
+
 const defaults = () => ({
   title: '',
   source: '',
@@ -148,10 +195,15 @@ const defaults = () => ({
   samples: [{ input: '', output: '' }],
   timeLimit: 1000,
   memoryLimit: 256,
-  difficulty: 800
+  difficulty: 800,
+  judgeMode: 'ICPC',
+  tags: []
 })
 
 const form = reactive(defaults())
+
+// 预览模式: split=分屏实时预览 / edit=仅编辑
+const previewMode = ref('split')
 
 // 预览只展示非空样例
 const filledSamples = computed(() =>
@@ -171,6 +223,8 @@ watch(
     form.timeLimit = v.timeLimit ?? 1000
     form.memoryLimit = v.memoryLimit ?? 256
     form.difficulty = v.difficulty ?? 800
+    form.judgeMode = v.judgeMode ?? 'ICPC'
+    form.tags = v.tags?.length ? [...v.tags] : []
   },
   { immediate: true }
 )
@@ -189,7 +243,9 @@ function handleSubmit() {
     samples: form.samples.filter((s) => s.input.trim() || s.output.trim()),
     timeLimit: form.timeLimit,
     memoryLimit: form.memoryLimit,
-    difficulty: form.difficulty
+    difficulty: form.difficulty,
+    judgeMode: form.judgeMode,
+    tags: form.tags
   })
 }
 </script>
@@ -206,60 +262,74 @@ function handleSubmit() {
   min-width: 0;
 }
 
+/* 仅编辑模式: 表单占满整行 */
+.form-col.full-width {
+  max-width: 100%;
+}
+
 .preview-col {
   flex: 1;
   min-width: 0;
 }
 
+/* 预览模式切换: 表单右上角 */
+.preview-switch {
+  text-align: right;
+  margin-bottom: 12px;
+}
+
 .preview-panel {
   position: sticky;
-  top: 16px;
-  border: 1px solid #eee;
-  border-radius: 4px;
+  top: calc(var(--header-height) + 12px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   padding: 16px 20px 24px;
-  background: #fafafa;
-  max-height: calc(100vh - 40px);
+  background: var(--bg);
+  box-shadow: var(--shadow-sm);
+  max-height: calc(100vh - var(--header-height) - 28px);
   overflow-y: auto;
 }
 
 .preview-head {
-  font-size: 13px;
-  color: #1a5cc8;
-  font-weight: 600;
+  font-size: 12px;
+  color: var(--brand);
+  font-weight: 700;
   text-align: right;
   margin-bottom: 4px;
+  letter-spacing: 0.04em;
 }
 
 .problem-title {
-  text-align: center;
   font-size: 22px;
-  font-weight: normal;
-  margin: 8px 0 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 8px 0 4px;
 }
 
 .problem-source {
-  text-align: center;
-  color: #888;
+  color: var(--text-3);
   font-size: 13px;
-  margin: -10px 0 14px;
+  margin: 0 0 14px;
 }
 
 .rating {
-  font-weight: 600;
-  font-family: Helvetica, Arial, sans-serif;
+  font-weight: 700;
 }
 
 .limits {
-  border: 1px solid #ddd;
-  background: #fff;
-  padding: 8px 16px;
-  margin-bottom: 20px;
   display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 28px;
-  color: #333;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  color: var(--text-2);
   font-size: 13px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+.limits b {
+  color: var(--text);
+  font-weight: 600;
 }
 
 .section {
@@ -269,61 +339,67 @@ function handleSubmit() {
 .section h3 {
   font-size: 16px;
   font-weight: 600;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--border);
   padding-bottom: 6px;
   margin: 0 0 10px;
 }
 
-.sample {
-  margin-bottom: 20px;
-  background: #fff;
+.sample-card {
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg);
 }
 
 .sample-heading {
-  font-size: 16px;
-  font-weight: bold;
-  margin-bottom: 10px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid #ddd;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 9px 14px;
+  background: var(--bg-soft);
+  border-bottom: 1px solid var(--border);
 }
 
 .sample-item {
-  margin-bottom: 8px;
+  padding: 10px 14px;
+}
+
+.sample-item + .sample-item {
+  border-top: 1px solid var(--border);
 }
 
 .sample-label-line {
-  font-size: 13px;
-  color: #666;
+  font-size: 12px;
+  color: var(--text-3);
   margin-bottom: 4px;
 }
 
 .sample-content {
   margin: 0;
   padding: 10px 14px;
-  border: 1px solid #ddd;
-  border-radius: 3px;
-  background: #fafafa;
-  font-family: Consolas, Monaco, 'Courier New', monospace;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-soft);
+  font-family: var(--font-mono);
   font-size: 13px;
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-all;
+  color: var(--text);
 }
 
 .sample-explain {
-  margin-top: 2px;
   padding: 10px 14px;
-  background: #f5f9ff;
-  border-left: 3px solid #1a5cc8;
-  border-radius: 0 4px 4px 0;
-  color: #333;
+  background: var(--brand-soft);
+  border-top: 1px solid var(--border);
+  color: var(--text);
   line-height: 1.7;
 }
 
 .explain-label {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  color: #1a5cc8;
+  color: var(--brand);
   margin-bottom: 4px;
 }
 
@@ -338,8 +414,8 @@ function handleSubmit() {
 
 .sample-row {
   margin-bottom: 12px;
-  border: 1px solid #eee;
-  border-radius: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   padding: 10px;
 }
 
@@ -356,14 +432,32 @@ function handleSubmit() {
 
 .col-label {
   font-size: 13px;
-  color: #666;
+  color: var(--text-2);
   margin-bottom: 4px;
 }
 
 .unit {
   margin-left: 8px;
-  color: #888;
+  color: var(--text-3);
   font-size: 13px;
+}
+
+.mode-hint {
+  margin-top: 4px;
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.preview-tags {
+  margin: -8px 0 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.preview-tag {
+  margin-right: 0;
 }
 
 /* 窄屏隐藏预览, 表单占满 */

@@ -14,7 +14,7 @@ const problemId = Number(route.params.id)
 
 <style scoped>
 .problem-discussion {
-  background: #fff;
-  min-height: calc(100vh - 44px);
+  background: var(--bg);
+  min-height: calc(100vh - var(--header-height));
 }
 </style>

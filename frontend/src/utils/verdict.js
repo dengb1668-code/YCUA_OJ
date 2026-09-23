@@ -19,6 +19,16 @@ export function verdictOf(status) {
   return verdictMap[status] ?? { short: status, label: status, color: '#999' }
 }
 
+/**
+ * CF 式判定文案: 带失败测试点显示 "Wrong answer on test 3";
+ * failedTestIndex 为空(IOI 模式/旧数据)回退 label
+ */
+export function verdictText(status, failedTestIndex) {
+  const v = verdictOf(status)
+  if (failedTestIndex == null) return v.label
+  return `${v.label} on test ${failedTestIndex}`
+}
+
 const languageMap = {
   CPP: 'C++',
   JAVA: 'Java',
