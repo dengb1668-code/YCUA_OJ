@@ -508,6 +508,12 @@ async function handleCustomTest() {
 }
 
 onMounted(() => {
+  // 非法题目ID(如 /problems/undefined)直接提示并回题库, 避免打到后端报系统内部错误
+  if (!Number.isInteger(problemId) || problemId <= 0) {
+    ElMessage.error('题目不存在或已被删除')
+    router.replace('/problems')
+    return
+  }
   fetchDetail()
   setupContestMode()
 })

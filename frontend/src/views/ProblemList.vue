@@ -120,9 +120,10 @@ function statusGlyph(status) {
   return statusMap[status]?.glyph ?? '—'
 }
 
-/** 整行可点击跳转题目详情 */
+/** 整行或标题链接点击跳转题目详情 */
 function goDetail(row) {
-  router.push(`/problems/${row.id}`)
+  const id = typeof row === 'object' ? row.id : row
+  router.push(`/problems/${id}`)
 }
 
 function handleSearch() {
