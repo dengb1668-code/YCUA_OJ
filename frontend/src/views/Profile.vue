@@ -8,8 +8,53 @@
           <div class="user-name-row">
             <span class="user-name">{{ userStore.username }}</span>
             <span class="role-badge" :class="`role-${userStore.role}`">{{ roleLabel }}</span>
+            <span v-if="certBadge" class="cert-badge" :class="`cert-${userStore.certStatus}`">{{ certBadge }}</span>
           </div>
           <div class="user-sub">坚持刷题, 每天进步一点点</div>
+        </div>
+      </div>
+
+      <!-- 学生认证卡(普通用户; 负责人/站长无需认证) -->
+      <div v-if="userStore.role === 'USER'" class="oj-card block cert-card">
+        <div class="card-title">
+          <el-icon :size="15" color="var(--brand)"><Postcard /></el-icon>
+          学生认证
+        </div>
+
+        <!-- 已通过 -->
+        <div v-if="cert.certStatus === 'APPROVED'" class="cert-ok">
+          <span class="cert-ok-icon"><el-icon :size="14"><CircleCheck /></el-icon></span>
+          认证已通过 — {{ cert.realName }} · {{ cert.grade }} · {{ cert.major }}
+        </div>
+
+        <!-- 审核中 -->
+        <div v-else-if="cert.certStatus === 'PENDING'" class="cert-pending">
+          <el-icon :size="15"><Clock /></el-icon>
+          认证申请审核中, 请耐心等待({{ cert.realName }} · {{ cert.grade }} · {{ cert.major }})
+        </div>
+
+        <!-- 未认证 / 已驳回(可重新申请) -->
+        <div v-else>
+          <p class="cert-tip">提交代码前需要完成学生认证, 填写真实信息后由集训队负责人/站长审核。</p>
+          <div v-if="cert.certStatus === 'REJECTED'" class="cert-reject">
+            上次申请被驳回{{ cert.certRejectReason ? `: ${cert.certRejectReason}` : '' }}, 请修改后重新提交
+          </div>
+          <el-form label-width="60px" class="cert-form">
+            <el-form-item label="姓名">
+              <el-input v-model="certForm.realName" maxlength="20" placeholder="真实姓名" style="width: 220px" />
+            </el-form-item>
+            <el-form-item label="年级">
+              <el-select v-model="certForm.grade" placeholder="选择年级" style="width: 220px">
+                <el-option v-for="g in gradeOptions" :key="g" :label="g" :value="g" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="专业">
+              <el-input v-model="certForm.major" maxlength="30" placeholder="如: 计算机科学与技术" style="width: 220px" />
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" :loading="applying" @click="handleApplyCert">提交认证申请</el-button>
+            </el-form-item>
+          </el-form>
         </div>
       </div>
 
@@ -154,21 +199,73 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { Document, CircleCheck, EditPen, TrendCharts, PieChart, Histogram, Calendar } from '@element-plus/icons-vue'
+import {
+  Document, CircleCheck, EditPen, TrendCharts, PieChart, Histogram, Calendar,
+  Postcard, Clock
+} from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import { getMyStats } from '../api/submission'
+import { applyCert, getMyCert } from '../api/user'
 import { ratingColor } from '../utils/rating'
-import { userStore } from '../store/user'
+import { userStore, isCertified } from '../store/user'
 
 const stats = ref({})
 
 // 角色展示文案
-const ROLE_LABELS = { OWNER: '站长', ADMIN: '集训队负责人', USER: '认证学生' }
-const roleLabel = computed(() => ROLE_LABELS[userStore.role] ?? '认证学生')
+const ROLE_LABELS = { OWNER: '站长', ADMIN: '集训队负责人', USER: '学生' }
+const roleLabel = computed(() => ROLE_LABELS[userStore.role] ?? '学生')
+
+// 学生认证
+const cert = ref({ certStatus: userStore.certStatus })
+const certForm = ref({ realName: '', grade: '', major: '' })
+const applying = ref(false)
+const gradeOptions = ['2020级', '2021级', '2022级', '2023级', '2024级', '2025级', '2026级', '2027级', '2028级']
+
+const CERT_LABELS = { NONE: '未认证', PENDING: '审核中', APPROVED: '已认证', REJECTED: '已驳回' }
+const certBadge = computed(() =>
+  userStore.role === 'USER' ? CERT_LABELS[userStore.certStatus] ?? '' : ''
+)
+
+async function fetchCert() {
+  try {
+    const data = await getMyCert()
+    cert.value = data
+    certForm.value = { realName: data.realName || '', grade: data.grade || '', major: data.major || '' }
+    userStore.setCertStatus(data.certStatus)
+  } catch (e) {
+  }
+}
+
+async function handleApplyCert() {
+  if (!certForm.value.realName.trim() || !certForm.value.grade || !certForm.value.major.trim()) {
+    ElMessage.warning('请填写姓名、年级和专业')
+    return
+  }
+  applying.value = true
+  try {
+    await applyCert({
+      realName: certForm.value.realName.trim(),
+      grade: certForm.value.grade,
+      major: certForm.value.major.trim()
+    })
+    ElMessage.success('认证申请已提交, 请等待审核')
+    await fetchCert()
+  } catch (e) {
+  } finally {
+    applying.value = false
+  }
+}
 
 onMounted(async () => {
-  try {
-    stats.value = await getMyStats()
-  } catch (e) {
+  if (userStore.token && userStore.role === 'USER') {
+    await fetchCert()
+  }
+  // 未认证用户不拉统计(接口会被认证拦截器拒绝)
+  if (isCertified()) {
+    try {
+      stats.value = await getMyStats()
+    } catch (e) {
+    }
   }
 })
 
@@ -332,6 +429,76 @@ const donutSegments = computed(() => {
   margin-top: 3px;
   color: var(--text-3);
   font-size: 13px;
+}
+
+/* 学生认证 */
+.cert-card {
+  margin-bottom: 20px;
+}
+
+.cert-badge {
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.cert-APPROVED {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.cert-PENDING {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.cert-NONE,
+.cert-REJECTED {
+  background: var(--wa-soft);
+  color: var(--wa);
+}
+
+.cert-ok {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ok);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.cert-ok-icon {
+  display: inline-flex;
+}
+
+.cert-pending {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--brand);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.cert-tip {
+  margin: 0 0 12px;
+  color: var(--text-2);
+  font-size: 13.5px;
+}
+
+.cert-reject {
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--bad-soft);
+  color: var(--bad);
+  font-size: 13px;
+}
+
+.cert-form {
+  margin-top: 4px;
 }
 
 /* 统计卡片 */

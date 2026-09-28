@@ -42,8 +42,11 @@
 
           <!-- 密码门 -->
           <div v-if="needPassword" class="password-gate">
-            <el-input v-model="passwordInput" type="password" placeholder="请输入比赛密码" style="width: 260px" />
-            <el-button type="primary" :loading="joining" @click="handleJoin">进入比赛</el-button>
+            <template v-if="isCertified()">
+              <el-input v-model="passwordInput" type="password" placeholder="请输入比赛密码" style="width: 260px" />
+              <el-button type="primary" :loading="joining" @click="handleJoin">进入比赛</el-button>
+            </template>
+            <span v-else class="muted">完成学生认证后才能加入比赛</span>
           </div>
 
           <!-- 内容区 -->
@@ -220,6 +223,7 @@ import {
   updateContestProblems
 } from '../api/contest'
 import { getProblemPage } from '../api/problem'
+import { isCertified } from '../store/user'
 import { getContestToken, setContestToken, clearContestToken } from '../utils/contestToken'
 import { formatTime } from '../utils/verdict'
 import { renderMarkdown } from '../utils/markdown'

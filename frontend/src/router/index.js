@@ -19,7 +19,7 @@ import ProblemSubmissions from '../views/ProblemSubmissions.vue'
 import ContestList from '../views/ContestList.vue'
 import ContestCreate from '../views/ContestCreate.vue'
 import ContestDetail from '../views/ContestDetail.vue'
-import { userStore } from '../store/user'
+import { userStore, isCertified } from '../store/user'
 
 const routes = [
   { path: '/', redirect: '/problems' },
@@ -162,6 +162,18 @@ router.beforeEach((to) => {
   // 仅负责人/站长可访问的页面(创建题目/创建比赛/用户管理/内容管理)
   if (to.meta.requiresManager && userStore.role !== 'ADMIN' && userStore.role !== 'OWNER') {
     return { path: '/problems' }
+  }
+  // 未完成学生认证的普通用户: 只能浏览题目/比赛, 其余页面引导到个人主页完成认证
+  if (userStore.token && !isCertified()) {
+    const certAllowed =
+      to.name === 'ProblemList' ||
+      to.name === 'ProblemDetail' ||
+      to.name === 'ContestList' ||
+      to.name === 'ContestDetail' ||
+      to.name === 'Profile'
+    if (!certAllowed && to.path !== '/login' && to.path !== '/register' && to.path !== '/forgot') {
+      return { path: '/profile' }
+    }
   }
 })
 

@@ -6,6 +6,7 @@ C:\Users\10600\Desktop\oj\src\main\java\com\oj\common\Result.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\common\UserContext.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\config\AsyncConfig.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\config\AuthInterceptor.java
+C:\Users\10600\Desktop\oj\src\main\java\com\oj\config\CertInterceptor.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\config\MybatisPlusConfig.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\config\WebMvcConfig.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\controller\CaptchaController.java
@@ -16,6 +17,8 @@ C:\Users\10600\Desktop\oj\src\main\java\com\oj\controller\ReplyController.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\controller\SubmissionController.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\controller\TestDataController.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\controller\UserController.java
+C:\Users\10600\Desktop\oj\src\main\java\com\oj\dto\CertApplyRequest.java
+C:\Users\10600\Desktop\oj\src\main\java\com\oj\dto\CertReviewRequest.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\dto\ContestCreateRequest.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\dto\ContestJoinRequest.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\dto\ContestProblemUpdateRequest.java
@@ -40,6 +43,7 @@ C:\Users\10600\Desktop\oj\src\main\java\com\oj\entity\ProblemTag.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\entity\Reply.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\entity\Submission.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\entity\User.java
+C:\Users\10600\Desktop\oj\src\main\java\com\oj\enums\CertStatus.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\enums\ContestType.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\enums\JudgeMode.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\enums\JudgeStatus.java
@@ -78,6 +82,8 @@ C:\Users\10600\Desktop\oj\src\main\java\com\oj\service\SubmissionService.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\service\TestDataService.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\service\UserService.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\vo\CaptchaVO.java
+C:\Users\10600\Desktop\oj\src\main\java\com\oj\vo\CertAdminVO.java
+C:\Users\10600\Desktop\oj\src\main\java\com\oj\vo\CertVO.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\vo\ContestDetailVO.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\vo\ContestJoinVO.java
 C:\Users\10600\Desktop\oj\src\main\java\com\oj\vo\ContestListVO.java

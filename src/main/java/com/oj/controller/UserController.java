@@ -2,11 +2,16 @@ package com.oj.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.oj.common.Result;
+import com.oj.dto.CertApplyRequest;
+import com.oj.dto.CertReviewRequest;
 import com.oj.dto.ForgotPasswordRequest;
 import com.oj.dto.LoginRequest;
 import com.oj.dto.RegisterRequest;
 import com.oj.dto.RoleUpdateRequest;
+import com.oj.enums.CertStatus;
 import com.oj.service.UserService;
+import com.oj.vo.CertAdminVO;
+import com.oj.vo.CertVO;
 import com.oj.vo.LoginVO;
 import com.oj.vo.UserAdminVO;
 import jakarta.validation.Valid;
@@ -76,6 +81,46 @@ public class UserController {
     @PutMapping("/{id}/role")
     public Result<Void> updateRole(@PathVariable Long id, @Valid @RequestBody RoleUpdateRequest request) {
         userService.updateRole(id, request.getRole());
+        return Result.ok(null);
+    }
+
+    /**
+     * 学生认证申请(普通用户; 审核中/已通过不可重复, 已驳回可重新申请)
+     * POST /api/user/cert/apply
+     */
+    @PostMapping("/cert/apply")
+    public Result<Void> applyCert(@Valid @RequestBody CertApplyRequest request) {
+        userService.applyCert(request);
+        return Result.ok(null);
+    }
+
+    /**
+     * 我的学生认证信息
+     * GET /api/user/cert
+     */
+    @GetMapping("/cert")
+    public Result<CertVO> myCert() {
+        return Result.ok(userService.myCert());
+    }
+
+    /**
+     * 学生认证申请分页(负责人/站长审核列表)
+     * GET /api/user/cert/page
+     */
+    @GetMapping("/cert/page")
+    public Result<Page<CertAdminVO>> pageCert(@RequestParam(required = false) CertStatus status,
+                                              @RequestParam(defaultValue = "1") long pageNum,
+                                              @RequestParam(defaultValue = "10") long pageSize) {
+        return Result.ok(userService.pageCert(status, pageNum, pageSize));
+    }
+
+    /**
+     * 学生认证审核(负责人/站长): 通过或驳回
+     * POST /api/user/cert/review
+     */
+    @PostMapping("/cert/review")
+    public Result<Void> reviewCert(@Valid @RequestBody CertReviewRequest request) {
+        userService.reviewCert(request);
         return Result.ok(null);
     }
 }

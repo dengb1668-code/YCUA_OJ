@@ -7,13 +7,28 @@
       <div v-if="problem" class="title-row">
         <h1 class="problem-title">{{ problem.title }}</h1>
         <div class="title-actions">
-          <el-button size="small" plain @click="router.push(`/problems/${problemId}/discussion`)">
+          <el-button
+            v-if="isCertified()"
+            size="small"
+            plain
+            @click="router.push(`/problems/${problemId}/discussion`)"
+          >
             讨论
           </el-button>
-          <el-button size="small" plain @click="router.push(`/problems/${problemId}/solution`)">
+          <el-button
+            v-if="isCertified()"
+            size="small"
+            plain
+            @click="router.push(`/problems/${problemId}/solution`)"
+          >
             题解
           </el-button>
-          <el-button size="small" plain @click="router.push(`/problems/${problemId}/submissions`)">
+          <el-button
+            v-if="isCertified()"
+            size="small"
+            plain
+            @click="router.push(`/problems/${problemId}/submissions`)"
+          >
             提交记录
           </el-button>
           <el-button
@@ -123,8 +138,8 @@
         </template>
       </div>
 
-      <!-- 提交区: 编辑器卡片 -->
-      <div v-if="userStore.token" class="section submit-section">
+      <!-- 提交区: 编辑器卡片(登录且已认证/负责人) -->
+      <div v-if="userStore.token && isCertified()" class="section submit-section">
         <h3>代码提交</h3>
         <div class="editor-card">
           <div class="editor-head">
@@ -160,7 +175,7 @@
       </div>
 
       <!-- 游客: 提交区位置提示登录 -->
-      <div v-else class="section guest-submit-hint">
+      <div v-else-if="!userStore.token" class="section guest-submit-hint">
         <h3>代码提交</h3>
         <div class="guest-hint-card">
           <p>游客模式可以查看题目, 登录后即可提交代码、参与讨论和比赛</p>
@@ -171,8 +186,19 @@
         </div>
       </div>
 
+      <!-- 已登录但未通过学生认证: 提示先完成认证 -->
+      <div v-else class="section guest-submit-hint">
+        <h3>代码提交</h3>
+        <div class="guest-hint-card">
+          <p>提交代码前需要先完成学生认证, 由集训队负责人/站长审核通过后即可提交</p>
+          <div class="guest-hint-actions">
+            <el-button type="primary" @click="router.push('/profile')">去认证</el-button>
+          </div>
+        </div>
+      </div>
+
       <!-- 自定义测试卡片 -->
-      <div v-if="userStore.token" class="section custom-test-section">
+      <div v-if="userStore.token && isCertified()" class="section custom-test-section">
         <h3>自定义测试</h3>
         <div class="test-card">
           <div class="sample-label">输入</div>
@@ -269,7 +295,7 @@ import { renderMarkdown } from '../utils/markdown'
 import { verdictOf, verdictText } from '../utils/verdict'
 import { getContestDetail } from '../api/contest'
 import { getContestToken } from '../utils/contestToken'
-import { userStore } from '../store/user'
+import { userStore, isCertified } from '../store/user'
 
 const route = useRoute()
 const router = useRouter()
@@ -437,6 +463,12 @@ async function setupContestMode() {
 }
 
 async function handleSubmit() {
+  // 未通过学生认证的普通用户不能提交(后端也会拦截, 这里提前提醒)
+  if (userStore.token && !isCertified()) {
+    ElMessage.warning('请先完成学生认证后再提交代码')
+    router.push('/profile')
+    return
+  }
   if (!code.value.trim()) {
     ElMessage.warning('代码不能为空')
     return

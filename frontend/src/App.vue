@@ -12,9 +12,11 @@
             <router-link to="/problems" class="nav-link">题库</router-link>
             <template v-if="userStore.token">
               <router-link to="/contests" class="nav-link">比赛</router-link>
-              <router-link to="/submissions" class="nav-link">提交记录</router-link>
-              <router-link to="/discussion" class="nav-link">讨论区</router-link>
-              <router-link to="/blogs" class="nav-link">博客</router-link>
+              <template v-if="isCertified()">
+                <router-link to="/submissions" class="nav-link">提交记录</router-link>
+                <router-link to="/discussion" class="nav-link">讨论区</router-link>
+                <router-link to="/blogs" class="nav-link">博客</router-link>
+              </template>
               <router-link to="/profile" class="nav-link">个人主页</router-link>
             </template>
           </nav>
@@ -44,6 +46,11 @@
             <span class="user-trigger">
               <span class="avatar">{{ (userStore.username || '?')[0].toUpperCase() }}</span>
               <span class="username">{{ userStore.username }}</span>
+              <span
+                v-if="!isCertified()"
+                class="cert-chip"
+                :class="userStore.certStatus === 'PENDING' ? 'pending' : 'none'"
+              >{{ userStore.certStatus === 'PENDING' ? '认证审核中' : '待认证' }}</span>
               <el-icon class="caret" :size="12"><ArrowDown /></el-icon>
             </span>
             <template #dropdown>
@@ -76,9 +83,11 @@
           <router-link to="/problems" class="nav-link" @click="mobileOpen = false">题库</router-link>
           <template v-if="userStore.token">
             <router-link to="/contests" class="nav-link" @click="mobileOpen = false">比赛</router-link>
-            <router-link to="/submissions" class="nav-link" @click="mobileOpen = false">提交记录</router-link>
-            <router-link to="/discussion" class="nav-link" @click="mobileOpen = false">讨论区</router-link>
-            <router-link to="/blogs" class="nav-link" @click="mobileOpen = false">博客</router-link>
+            <template v-if="isCertified()">
+              <router-link to="/submissions" class="nav-link" @click="mobileOpen = false">提交记录</router-link>
+              <router-link to="/discussion" class="nav-link" @click="mobileOpen = false">讨论区</router-link>
+              <router-link to="/blogs" class="nav-link" @click="mobileOpen = false">博客</router-link>
+            </template>
             <router-link to="/profile" class="nav-link" @click="mobileOpen = false">个人主页</router-link>
           </template>
           <template v-else>
@@ -106,7 +115,7 @@
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Moon, Sunny, Menu, ArrowDown } from '@element-plus/icons-vue'
-import { userStore } from './store/user'
+import { userStore, isCertified } from './store/user'
 
 const router = useRouter()
 
@@ -278,6 +287,26 @@ onMounted(updateThemeColor)
   padding: 6px 12px;
   border-radius: 6px;
   white-space: nowrap;
+}
+
+/* ---- 学生认证状态角标 ---- */
+.app .cert-chip {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 0 7px;
+  line-height: 17px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.app .cert-chip.none {
+  background: var(--wa-soft);
+  color: var(--wa);
+}
+
+.app .cert-chip.pending {
+  background: var(--brand-soft);
+  color: var(--brand);
 }
 
 .app .auth-link:hover {

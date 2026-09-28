@@ -1,3 +1,4 @@
+com\oj\vo\CertAdminVO.class
 com\oj\common\UserContext.class
 com\oj\mapper\ReplyMapper.class
 com\oj\service\impl\SubmissionServiceImpl.class
@@ -12,6 +13,7 @@ com\oj\dto\TestCaseRequest.class
 com\oj\entity\Post.class
 com\oj\service\impl\UserServiceImpl.class
 com\oj\judge\TestDataStore$CaseInfo.class
+com\oj\vo\CertVO.class
 com\oj\vo\UserStatsVO$RatingCount.class
 com\oj\dto\PostCreateRequest.class
 com\oj\mapper\ContestProblemMapper.class
@@ -23,6 +25,7 @@ com\oj\vo\ContestJoinVO.class
 com\oj\judge\CodeRunner.class
 com\oj\entity\Problem$Sample.class
 com\oj\entity\ContestProblem.class
+com\oj\dto\CertReviewRequest.class
 com\oj\dto\ProblemCreateRequest.class
 com\oj\vo\TestCaseVO.class
 com\oj\vo\ContestProblemVO.class
@@ -52,6 +55,7 @@ com\oj\enums\ProblemStatus.class
 com\oj\judge\JudgeQueue.class
 com\oj\config\MybatisPlusConfig.class
 com\oj\entity\Submission.class
+com\oj\dto\CertApplyRequest.class
 com\oj\judge\JudgeService$1.class
 com\oj\mapper\SubmissionMapper.class
 com\oj\service\ContestService.class
@@ -78,6 +82,7 @@ com\oj\entity\Contest.class
 com\oj\judge\CodeRunner$1.class
 com\oj\JudgeApplication.class
 com\oj\common\NicknameUtil.class
+com\oj\config\CertInterceptor.class
 com\oj\dto\RegisterRequest.class
 com\oj\controller\ReplyController.class
 com\oj\dto\ForgotPasswordRequest.class
@@ -108,4 +113,5 @@ com\oj\enums\ContestType.class
 com\oj\dto\CustomTestRequest.class
 com\oj\controller\ContestController.class
 com\oj\vo\TestCaseUploadVO.class
+com\oj\enums\CertStatus.class
 com\oj\judge\CustomTestService.class

@@ -34,6 +34,9 @@ request.interceptors.response.use(
       userStore.logout()
       ElMessage.error('未登录或登录已过期, 请重新登录')
       window.location.href = '/login'
+    } else if (error.response?.status === 403) {
+      // 后端权限拦截(如未完成学生认证), 展示后端返回的业务提示
+      ElMessage.error(error.response.data?.message || '没有权限执行该操作')
     } else {
       ElMessage.error(error.message || '网络错误')
     }

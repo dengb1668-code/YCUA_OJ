@@ -10,7 +10,7 @@ import lombok.Getter;
 @Getter
 public enum UserRole {
 
-    USER(0, "认证学生"),
+    USER(0, "学生"),
     ADMIN(1, "集训队负责人"),
     OWNER(2, "站长");
 

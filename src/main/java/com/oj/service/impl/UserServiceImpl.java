@@ -4,14 +4,20 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.oj.common.CaptchaService;
 import com.oj.common.JwtUtil;
+import com.oj.common.UserContext;
+import com.oj.dto.CertApplyRequest;
+import com.oj.dto.CertReviewRequest;
 import com.oj.dto.ForgotPasswordRequest;
 import com.oj.dto.LoginRequest;
 import com.oj.dto.RegisterRequest;
 import com.oj.entity.User;
+import com.oj.enums.CertStatus;
 import com.oj.enums.UserRole;
 import com.oj.mapper.UserMapper;
 import com.oj.service.PermissionService;
 import com.oj.service.UserService;
+import com.oj.vo.CertAdminVO;
+import com.oj.vo.CertVO;
 import com.oj.vo.LoginVO;
 import com.oj.vo.UserAdminVO;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +25,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
 @Service
@@ -45,6 +52,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // 注册只收用户名/密码/手机号, 昵称默认同用户名
         user.setNickname(request.getUsername());
         user.setRole(UserRole.USER);
+        user.setCertStatus(CertStatus.NONE);
         save(user);
         return buildLoginVO(user);
     }
@@ -108,6 +116,118 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         updateById(update);
     }
 
+    @Override
+    public void applyCert(CertApplyRequest request) {
+        User user = getById(UserContext.getUserId());
+        if (user == null) {
+            throw new IllegalArgumentException("用户不存在");
+        }
+        if (user.getRole() != UserRole.USER) {
+            throw new IllegalArgumentException("负责人/站长无需学生认证");
+        }
+        if (user.getCertStatus() == CertStatus.PENDING) {
+            throw new IllegalArgumentException("认证申请审核中, 请耐心等待");
+        }
+        if (user.getCertStatus() == CertStatus.APPROVED) {
+            throw new IllegalArgumentException("已完成学生认证, 无需重复申请");
+        }
+        // NONE/REJECTED 均可申请(驳回后可修改信息重新提交)
+        // 用显式 UpdateWrapper: updateById 默认忽略 null, 清不掉旧的审核信息
+        baseMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<User>()
+                .eq(User::getId, user.getId())
+                .set(User::getRealName, request.getRealName().trim())
+                .set(User::getGrade, request.getGrade().trim())
+                .set(User::getMajor, request.getMajor().trim())
+                .set(User::getCertStatus, CertStatus.PENDING)
+                .set(User::getCertApplyTime, LocalDateTime.now())
+                .set(User::getCertReviewTime, null)
+                .set(User::getCertReviewerId, null)
+                .set(User::getCertRejectReason, null));
+    }
+
+    @Override
+    public CertVO myCert() {
+        User user = getById(UserContext.getUserId());
+        if (user == null) {
+            throw new IllegalArgumentException("用户不存在");
+        }
+        CertVO vo = new CertVO();
+        vo.setCertStatus(user.getRole() == UserRole.USER ? user.getCertStatus() : CertStatus.APPROVED);
+        if (user.getRole() != UserRole.USER) {
+            return vo;
+        }
+        // realName/grade/major 为 select=false 字段, 显式查询
+        User detail = baseMapper.selectOne(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<User>()
+                .eq(User::getId, user.getId())
+                .select(User::getRealName, User::getGrade, User::getMajor,
+                        User::getCertStatus, User::getCertApplyTime, User::getCertReviewTime, User::getCertRejectReason));
+        vo.setRealName(detail.getRealName());
+        vo.setGrade(detail.getGrade());
+        vo.setMajor(detail.getMajor());
+        vo.setCertStatus(detail.getCertStatus());
+        vo.setCertApplyTime(detail.getCertApplyTime());
+        vo.setCertReviewTime(detail.getCertReviewTime());
+        vo.setCertRejectReason(detail.getCertRejectReason());
+        return vo;
+    }
+
+    @Override
+    public Page<CertAdminVO> pageCert(CertStatus status, long pageNum, long pageSize) {
+        permissionService.requireManager();
+        Page<User> page = lambdaQuery()
+                .eq(status != null, User::getCertStatus, status)
+                .and(w -> w.isNotNull(User::getCertApplyTime))
+                .orderByAsc(User::getCertStatus)
+                .orderByDesc(User::getCertApplyTime)
+                .page(new Page<>(pageNum, pageSize));
+        // realName/grade/major 为 select=false 字段, 需要按 id 批量显式查询
+        java.util.List<Long> ids = page.getRecords().stream().map(User::getId).collect(Collectors.toList());
+        java.util.Map<Long, User> detailMap = ids.isEmpty() ? java.util.Map.of()
+                : baseMapper.selectList(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<User>()
+                        .in(User::getId, ids)
+                        .select(User::getId, User::getRealName, User::getGrade, User::getMajor))
+                        .stream().collect(Collectors.toMap(User::getId, u -> u));
+        Page<CertAdminVO> voPage = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
+        voPage.setRecords(page.getRecords().stream().map(u -> {
+            CertAdminVO vo = new CertAdminVO();
+            vo.setUserId(u.getId());
+            vo.setUsername(u.getUsername());
+            vo.setNickname(u.getNickname());
+            vo.setCertStatus(u.getCertStatus());
+            vo.setCertApplyTime(u.getCertApplyTime());
+            User d = detailMap.get(u.getId());
+            if (d != null) {
+                vo.setRealName(d.getRealName());
+                vo.setGrade(d.getGrade());
+                vo.setMajor(d.getMajor());
+            }
+            return vo;
+        }).collect(Collectors.toList()));
+        return voPage;
+    }
+
+    @Override
+    public void reviewCert(CertReviewRequest request) {
+        permissionService.requireManager();
+        User target = getById(request.getUserId());
+        if (target == null) {
+            throw new IllegalArgumentException("用户不存在: id=" + request.getUserId());
+        }
+        if (target.getRole() != UserRole.USER) {
+            throw new IllegalArgumentException("该用户无需学生认证");
+        }
+        if (target.getCertStatus() != CertStatus.PENDING) {
+            throw new IllegalArgumentException("该申请不在待审核状态");
+        }
+        // 显式 UpdateWrapper: 通过时需把驳回原因置 NULL
+        baseMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<User>()
+                .eq(User::getId, target.getId())
+                .set(User::getCertStatus, request.getApprove() ? CertStatus.APPROVED : CertStatus.REJECTED)
+                .set(User::getCertReviewTime, LocalDateTime.now())
+                .set(User::getCertReviewerId, UserContext.getUserId())
+                .set(User::getCertRejectReason, request.getApprove() ? null : request.getReason()));
+    }
+
     private LoginVO buildLoginVO(User user) {
         LoginVO vo = new LoginVO();
         vo.setToken(jwtUtil.generateToken(user.getId(), user.getUsername()));
@@ -115,6 +235,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         vo.setUsername(user.getUsername());
         vo.setNickname(user.getNickname());
         vo.setRole(user.getRole());
+        vo.setCertStatus(user.getCertStatus());
         return vo;
     }
 }

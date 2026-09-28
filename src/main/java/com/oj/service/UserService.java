@@ -2,10 +2,15 @@ package com.oj.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.IService;
+import com.oj.dto.CertApplyRequest;
+import com.oj.dto.CertReviewRequest;
 import com.oj.dto.ForgotPasswordRequest;
 import com.oj.dto.LoginRequest;
 import com.oj.dto.RegisterRequest;
 import com.oj.entity.User;
+import com.oj.enums.CertStatus;
+import com.oj.vo.CertAdminVO;
+import com.oj.vo.CertVO;
 import com.oj.vo.LoginVO;
 import com.oj.vo.UserAdminVO;
 
@@ -35,4 +40,24 @@ public interface UserService extends IService<User> {
      * 找回密码: 验证图形验证码 + 用户名与手机号匹配后重置密码(无短信验证)
      */
     void forgotPassword(ForgotPasswordRequest request);
+
+    /**
+     * 学生认证申请(普通用户): 审核中/已通过时不可重复申请, 已驳回可重新申请
+     */
+    void applyCert(CertApplyRequest request);
+
+    /**
+     * 我的学生认证信息
+     */
+    CertVO myCert();
+
+    /**
+     * 学生认证申请分页(负责人/站长审核列表)
+     */
+    Page<CertAdminVO> pageCert(CertStatus status, long pageNum, long pageSize);
+
+    /**
+     * 学生认证审核(负责人/站长): 通过或驳回
+     */
+    void reviewCert(CertReviewRequest request);
 }

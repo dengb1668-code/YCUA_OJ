@@ -48,3 +48,34 @@ export function getUserPage(params) {
 export function updateUserRole(id, data) {
   return request.put(`/user/${id}/role`, data)
 }
+
+/**
+ * 学生认证申请
+ * @param {Object} data { realName, grade, major }
+ */
+export function applyCert(data) {
+  return request.post('/user/cert/apply', data)
+}
+
+/**
+ * 我的学生认证信息
+ */
+export function getMyCert() {
+  return request.get('/user/cert')
+}
+
+/**
+ * 学生认证申请分页(负责人/站长审核列表)
+ * @param {Object} params { status, pageNum, pageSize }
+ */
+export function pageCert(params) {
+  return request.get('/user/cert/page', { params })
+}
+
+/**
+ * 学生认证审核(负责人/站长)
+ * @param {Object} data { userId, approve, reason }
+ */
+export function reviewCert(data) {
+  return request.post('/user/cert/review', data)
+}
