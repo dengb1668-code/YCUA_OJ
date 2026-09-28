@@ -59,7 +59,7 @@
                   <template #default="{ row }">
                     <el-link
                       type="primary"
-                      :underline="false"
+                      underline="never"
                       @click="router.push(`/problems/${row.problemId}?contest=${contest.id}`)"
                     >
                       {{ row.title }}

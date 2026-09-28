@@ -25,14 +25,14 @@
         </el-table-column>
         <el-table-column v-if="mode === 'mine'" label="题目" min-width="220">
           <template #default="{ row }">
-            <el-link type="primary" :underline="false" @click="router.push(`/problems/${row.problemId}`)">
+            <el-link type="primary" underline="never" @click="router.push(`/problems/${row.problemId}`)">
               {{ row.problemTitle }}
             </el-link>
           </template>
         </el-table-column>
         <el-table-column v-else label="题目" min-width="220">
           <template #default="{ row }">
-            <el-link type="primary" :underline="false" @click="router.push(`/problems/${row.problemId}`)">
+            <el-link type="primary" underline="never" @click="router.push(`/problems/${row.problemId}`)">
               <span v-if="row.displayId" class="mono display-id">{{ row.displayId }}</span>
               {{ row.problemTitle }}
             </el-link>

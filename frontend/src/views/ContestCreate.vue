@@ -23,7 +23,8 @@
 
           <div class="form-section">
             <div class="section-title">赛制与时间</div>
-            <el-form-item label="赛制">
+            <!-- for="" 避免 label 指向 radio-group 的 div, 消除 Chrome "Incorrect use of <label for>" 告警 -->
+            <el-form-item label="赛制" for="">
               <el-radio-group v-model="form.type">
                 <el-radio value="ICPC">ICPC(按解题数+罚时排名)</el-radio>
                 <el-radio value="OI">OI(按总分排名, 赛期隐藏榜单)</el-radio>
@@ -68,7 +69,7 @@
                 <el-option
                   v-for="p in searchOptions"
                   :key="p.id"
-                  :label="`#${p.id} ${p.title}`"
+                  :label="`#${p.id} ${p.title}${publishTag(p)}`"
                   :value="p.id"
                 />
               </el-select>
@@ -140,11 +141,18 @@ async function searchProblems(keyword) {
   try {
     const data = await getProblemPage({ pageNum: 1, pageSize: 20, keyword: keyword || '' })
     searchOptions.value = data.records
-    data.records.forEach((p) => problemTitleMap.set(p.id, p.title))
+    data.records.forEach((p) => problemTitleMap.set(p.id, `${p.title}${publishTag(p)}`))
   } catch (e) {
   } finally {
     searching.value = false
   }
+}
+
+/** 发布状态后缀(草稿/已归档题挂入比赛前需留意) */
+function publishTag(p) {
+  if (p.publishStatus === 'DRAFT') return ' [草稿]'
+  if (p.publishStatus === 'ARCHIVED') return ' [已归档]'
+  return ''
 }
 
 function problemTitle(pid) {

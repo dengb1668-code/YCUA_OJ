@@ -69,7 +69,8 @@
           />
           <span class="unit">Codeforces 难度分, 如 800 / 1200 / 1900 / 2400</span>
         </el-form-item>
-        <el-form-item label="判题模式">
+        <!-- for="" 避免 label 指向 radio-group 的 div, 消除 Chrome "Incorrect use of <label for>" 告警 -->
+        <el-form-item label="判题模式" for="">
           <el-radio-group v-model="form.judgeMode">
             <el-radio value="ICPC">ICPC</el-radio>
             <el-radio value="IOI">IOI</el-radio>

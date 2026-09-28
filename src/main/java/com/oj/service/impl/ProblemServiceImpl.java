@@ -14,6 +14,7 @@ import com.oj.entity.Reply;
 import com.oj.entity.Submission;
 import com.oj.enums.JudgeMode;
 import com.oj.enums.JudgeStatus;
+import com.oj.enums.ProblemPublishStatus;
 import com.oj.enums.ProblemStatus;
 import com.oj.judge.TestDataStore;
 import com.oj.mapper.ContestProblemMapper;
@@ -22,7 +23,9 @@ import com.oj.mapper.ProblemMapper;
 import com.oj.mapper.ProblemTagMapper;
 import com.oj.mapper.ReplyMapper;
 import com.oj.mapper.SubmissionMapper;
+import com.oj.service.ContestService;
 import com.oj.service.ProblemService;
+import com.oj.service.PermissionService;
 import com.oj.service.TestDataService;
 import com.oj.vo.ProblemListVO;
 import lombok.RequiredArgsConstructor;
@@ -47,6 +50,8 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
     private final PostMapper postMapper;
     private final ReplyMapper replyMapper;
     private final ProblemTagMapper problemTagMapper;
+    private final PermissionService permissionService;
+    private final ContestService contestService;
 
     @Override
     public Page<ProblemListVO> pageProblems(long pageNum, long pageSize, String keyword, List<String> tags, Long userId) {
@@ -69,6 +74,7 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
         }
 
         Page<Problem> page = lambdaQuery()
+                .eq(!permissionService.isManager(userId), Problem::getPublishStatus, ProblemPublishStatus.PUBLISHED)
                 .in(tagFilterActive, Problem::getId, tagProblemIds)
                 .like(org.springframework.util.StringUtils.hasText(keyword), Problem::getTitle, keyword)
                 .orderByAsc(Problem::getId)
@@ -141,13 +147,23 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
     }
 
     @Override
-    public Problem getProblemDetail(Long id) {
+    public Problem getProblemDetail(Long id, Long contestId, String contestToken) {
         Problem problem = getById(id);
         if (problem == null) {
             throw new IllegalArgumentException("题目不存在: id=" + id);
         }
+        Long userId = UserContext.getUserId();
+        boolean manager = permissionService.isManager(userId);
+        if (!manager && problem.getPublishStatus() != ProblemPublishStatus.PUBLISHED) {
+            // 草稿/归档题仅管理端可见; 比赛上下文由 contest_problem 关联单独控制可见性
+            boolean viaContest = contestId != null
+                    && contestService.canViewProblem(contestId, id, contestToken);
+            if (!viaContest) {
+                throw new IllegalArgumentException("题目尚未发布");
+            }
+        }
         // 填充测试点管理相关的瞬态字段(前端据此显示管理入口)
-        problem.setCanManage(testDataService.canManage(problem, UserContext.getUserId()));
+        problem.setCanManage(testDataService.canManage(problem, userId));
         problem.setTestCaseCount(testDataService.count(id));
         // 填充标签(编辑回填与详情展示用)
         problem.setTags(queryTagMap(List.of(id)).getOrDefault(id, List.of()));
@@ -157,6 +173,8 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
     @Override
     @Transactional
     public Long createProblem(ProblemCreateRequest request) {
+        // 仅管理员/站长可创建题目
+        permissionService.requireManager();
         Problem problem = new Problem();
         problem.setTitle(request.getTitle());
         problem.setSource(request.getSource());
@@ -168,10 +186,35 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
         problem.setMemoryLimit(request.getMemoryLimit());
         problem.setDifficulty(request.getDifficulty());
         problem.setJudgeMode(request.getJudgeMode() != null ? request.getJudgeMode() : JudgeMode.ICPC);
+        problem.setPublishStatus(ProblemPublishStatus.DRAFT);
         problem.setAuthorId(UserContext.getUserId());
         save(problem);
         saveTags(problem.getId(), request.getTags());
         return problem.getId();
+    }
+
+    @Override
+    @Transactional
+    public void publishProblem(Long id) {
+        permissionService.requireManager();
+        Problem problem = getById(id);
+        if (problem == null) {
+            throw new IllegalArgumentException("题目不存在: id=" + id);
+        }
+        problem.setPublishStatus(ProblemPublishStatus.PUBLISHED);
+        updateById(problem);
+    }
+
+    @Override
+    @Transactional
+    public void archiveProblem(Long id) {
+        permissionService.requireManager();
+        Problem problem = getById(id);
+        if (problem == null) {
+            throw new IllegalArgumentException("题目不存在: id=" + id);
+        }
+        problem.setPublishStatus(ProblemPublishStatus.ARCHIVED);
+        updateById(problem);
     }
 
     @Override

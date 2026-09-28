@@ -13,6 +13,7 @@
             <router-link to="/contests" class="nav-link">比赛</router-link>
             <router-link to="/submissions" class="nav-link">提交记录</router-link>
             <router-link to="/discussion" class="nav-link">讨论区</router-link>
+            <router-link to="/blogs" class="nav-link">博客</router-link>
             <router-link to="/profile" class="nav-link">个人主页</router-link>
           </nav>
         </div>
@@ -44,8 +45,18 @@
               <el-dropdown-menu>
                 <el-dropdown-item command="profile">个人主页</el-dropdown-item>
                 <el-dropdown-item command="submissions">提交记录</el-dropdown-item>
-                <el-dropdown-item v-if="userStore.role === 'OWNER'" command="users" divided>
+                <el-dropdown-item
+                  v-if="userStore.role === 'ADMIN' || userStore.role === 'OWNER'"
+                  command="users"
+                  divided
+                >
                   用户管理
+                </el-dropdown-item>
+                <el-dropdown-item
+                  v-if="userStore.role === 'ADMIN' || userStore.role === 'OWNER'"
+                  command="content"
+                >
+                  内容管理
                 </el-dropdown-item>
                 <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
               </el-dropdown-menu>
@@ -61,6 +72,7 @@
           <router-link to="/contests" class="nav-link" @click="mobileOpen = false">比赛</router-link>
           <router-link to="/submissions" class="nav-link" @click="mobileOpen = false">提交记录</router-link>
           <router-link to="/discussion" class="nav-link" @click="mobileOpen = false">讨论区</router-link>
+          <router-link to="/blogs" class="nav-link" @click="mobileOpen = false">博客</router-link>
           <router-link to="/profile" class="nav-link" @click="mobileOpen = false">个人主页</router-link>
         </nav>
       </transition>
@@ -125,6 +137,8 @@ function handleCommand(command) {
     router.push('/submissions')
   } else if (command === 'users') {
     router.push('/admin/users')
+  } else if (command === 'content') {
+    router.push('/admin/content')
   }
 }
 

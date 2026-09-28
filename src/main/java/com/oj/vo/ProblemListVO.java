@@ -3,6 +3,7 @@ package com.oj.vo;
 import com.oj.entity.Problem;
 import com.oj.enums.JudgeMode;
 import com.oj.enums.ProblemStatus;
+import com.oj.enums.ProblemPublishStatus;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -28,6 +29,8 @@ public class ProblemListVO {
     /** 判题模式: ICPC(首错即停) / IOI(部分分) */
     private JudgeMode judgeMode;
 
+    private ProblemPublishStatus publishStatus;
+
     /** 题目标签(中文, 列表接口批量填充) */
     private List<String> tags;
 
@@ -49,6 +52,7 @@ public class ProblemListVO {
         vo.setSource(problem.getSource());
         vo.setDifficulty(problem.getDifficulty());
         vo.setJudgeMode(problem.getJudgeMode());
+        vo.setPublishStatus(problem.getPublishStatus());
         vo.setTags(problem.getTags());
         vo.setTimeLimit(problem.getTimeLimit());
         vo.setMemoryLimit(problem.getMemoryLimit());

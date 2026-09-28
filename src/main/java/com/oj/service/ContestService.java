@@ -18,7 +18,7 @@ import java.util.List;
 public interface ContestService extends IService<Contest> {
 
     /**
-     * 创建比赛(任何登录用户), 返回比赛ID
+     * 创建比赛(仅管理员/站长), 返回比赛ID
      */
     Long create(ContestCreateRequest request);
 
@@ -66,4 +66,10 @@ public interface ContestService extends IService<Contest> {
      * 校验比赛内提交合法性: 比赛存在、时间窗内、访问 token 有效、题目在比赛题目集中
      */
     void checkSubmitAccess(Long contestId, Long problemId, String contestToken);
+
+    /**
+     * 当前用户是否可查看指定比赛中的题目(草稿题经比赛关联可见):
+     * 创建者/管理端放行; 其余需题目在比赛题目集中、比赛已开始、比赛访问 token 有效
+     */
+    boolean canViewProblem(Long contestId, Long problemId, String contestToken);
 }

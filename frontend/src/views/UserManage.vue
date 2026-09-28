@@ -61,10 +61,10 @@
                 plain
                 @click="setRole(row, 1)"
               >
-                设为管理员
+                设为负责人
               </el-button>
               <el-button v-else size="small" plain type="danger" @click="setRole(row, 0)">
-                取消管理员
+                取消负责人
               </el-button>
             </template>
           </template>
@@ -95,7 +95,7 @@ const pageSize = ref(10)
 const keyword = ref('')
 
 function roleLabel(role) {
-  return { USER: '普通用户', ADMIN: '管理员', OWNER: '站长' }[role] ?? role
+  return { USER: '认证学生', ADMIN: '集训队负责人', OWNER: '站长' }[role] ?? role
 }
 
 function formatTime(t) {
@@ -109,7 +109,7 @@ function handleSearch() {
 }
 
 async function setRole(row, role) {
-  const action = role === 1 ? '设为管理员' : '取消管理员'
+  const action = role === 1 ? '设为负责人' : '取消负责人'
   try {
     await ElMessageBox.confirm(`确定将 ${row.username} ${action}?`, action, {
       type: 'warning',

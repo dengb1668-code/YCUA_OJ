@@ -62,7 +62,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public Page<UserAdminVO> pageUsers(String keyword, long pageNum, long pageSize) {
-        permissionService.requireOwner();
+        permissionService.requireManager();
         Page<User> page = lambdaQuery()
                 .and(StringUtils.hasText(keyword), w -> w
                         .like(User::getUsername, keyword)
@@ -80,7 +80,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public void updateRole(Long userId, Integer role) {
-        permissionService.requireOwner();
+        // 集训队负责人/站长可管理用户; 只能设为学生或负责人, 站长角色不可动
+        permissionService.requireManager();
         User target = getById(userId);
         if (target == null) {
             throw new IllegalArgumentException("用户不存在: id=" + userId);

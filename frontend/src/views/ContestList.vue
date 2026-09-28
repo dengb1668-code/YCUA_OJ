@@ -2,7 +2,14 @@
   <div class="contest-list">
     <div class="page-head">
       <h2 class="page-title">比赛</h2>
-      <el-button type="primary" plain @click="router.push('/contests/create')">创建比赛</el-button>
+      <el-button
+        v-if="userStore.role === 'ADMIN' || userStore.role === 'OWNER'"
+        type="primary"
+        plain
+        @click="router.push('/contests/create')"
+      >
+        创建比赛
+      </el-button>
     </div>
 
     <div v-loading="loading" class="contest-grid">
@@ -61,6 +68,7 @@ import { useRouter } from 'vue-router'
 import { Lock } from '@element-plus/icons-vue'
 import { getContestPage } from '../api/contest'
 import { formatTime } from '../utils/verdict'
+import { userStore } from '../store/user'
 
 const router = useRouter()
 

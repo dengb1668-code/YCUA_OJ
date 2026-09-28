@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import com.oj.enums.JudgeMode;
+import com.oj.enums.ProblemPublishStatus;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -53,6 +54,9 @@ public class Problem {
 
     /** 难度(Codeforces Rating, 800-3500) */
     private Integer difficulty;
+
+    /** 题目发布状态: 草稿、已发布、已归档; 比赛可见性由 contest_problem 控制 */
+    private ProblemPublishStatus publishStatus;
 
     /** 判题模式: ICPC(首错即停, 无部分分) / IOI(逐点部分分) */
     private JudgeMode judgeMode;

@@ -9,10 +9,12 @@ import ForgotPassword from '../views/ForgotPassword.vue'
 import SubmissionList from '../views/SubmissionList.vue'
 import Profile from '../views/Profile.vue'
 import DiscussionList from '../views/DiscussionList.vue'
+import BlogList from '../views/BlogList.vue'
 import ProblemDiscussion from '../views/ProblemDiscussion.vue'
 import ProblemSolution from '../views/ProblemSolution.vue'
 import PostDetail from '../views/PostDetail.vue'
 import UserManage from '../views/UserManage.vue'
+import ContentManage from '../views/ContentManage.vue'
 import ProblemSubmissions from '../views/ProblemSubmissions.vue'
 import ContestList from '../views/ContestList.vue'
 import ContestCreate from '../views/ContestCreate.vue'
@@ -50,7 +52,7 @@ const routes = [
     path: '/problems/create',
     name: 'ProblemCreate',
     component: ProblemCreate,
-    meta: { title: '创建题目' }
+    meta: { title: '创建题目', requiresManager: true }
   },
   // 注意: /problems/:id/discussion、/problems/:id/solution 必须放在 /problems/:id 之前
   {
@@ -102,6 +104,12 @@ const routes = [
     meta: { title: '讨论区' }
   },
   {
+    path: '/blogs',
+    name: 'BlogList',
+    component: BlogList,
+    meta: { title: '博客' }
+  },
+  {
     path: '/post/:id',
     name: 'PostDetail',
     component: PostDetail,
@@ -111,7 +119,13 @@ const routes = [
     path: '/admin/users',
     name: 'UserManage',
     component: UserManage,
-    meta: { title: '用户管理', requiresOwner: true }
+    meta: { title: '用户管理', requiresManager: true }
+  },
+  {
+    path: '/admin/content',
+    name: 'ContentManage',
+    component: ContentManage,
+    meta: { title: '内容管理', requiresManager: true }
   },
   {
     path: '/contests',
@@ -124,7 +138,7 @@ const routes = [
     path: '/contests/create',
     name: 'ContestCreate',
     component: ContestCreate,
-    meta: { title: '创建比赛' }
+    meta: { title: '创建比赛', requiresManager: true }
   },
   {
     path: '/contests/:id',
@@ -141,11 +155,12 @@ const router = createRouter({
 
 // 全局守卫: 未登录一律去登录页(登录/注册/找回密码页本身除外)
 router.beforeEach((to) => {
-  if (to.path !== '/login' && to.path !== '/register' && to.path !== '/forgot' && !userStore.token) {
+  const publicRoute = to.name === 'ProblemList' || to.name === 'ProblemDetail'
+  if (to.path !== '/login' && to.path !== '/register' && to.path !== '/forgot' && !userStore.token && !publicRoute) {
     return { path: '/login' }
   }
-  // 仅站长可访问的页面
-  if (to.meta.requiresOwner && userStore.role !== 'OWNER') {
+  // 仅负责人/站长可访问的页面(创建题目/创建比赛/用户管理/内容管理)
+  if (to.meta.requiresManager && userStore.role !== 'ADMIN' && userStore.role !== 'OWNER') {
     return { path: '/problems' }
   }
 })

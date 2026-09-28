@@ -24,7 +24,12 @@
           @clear="handleSearch"
         />
         <el-button plain @click="handleSearch">搜索</el-button>
-        <el-button type="primary" plain @click="router.push('/problems/create')">
+        <el-button
+          v-if="userStore.role === 'ADMIN' || userStore.role === 'OWNER'"
+          type="primary"
+          plain
+          @click="router.push('/problems/create')"
+        >
           创建题目
         </el-button>
       </div>
@@ -39,7 +44,7 @@
         </el-table-column>
         <el-table-column label="标题" min-width="320">
           <template #default="{ row }">
-            <el-link type="primary" :underline="false" class="prob-link" @click.stop="goDetail(row.id)">
+            <el-link type="primary" underline="never" class="prob-link" @click.stop="goDetail(row.id)">
               {{ row.title }}
             </el-link>
           </template>
@@ -82,6 +87,7 @@ import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { getProblemPage, getProblemTags } from '../api/problem'
 import { ratingColor } from '../utils/rating'
+import { userStore } from '../store/user'
 
 const router = useRouter()
 

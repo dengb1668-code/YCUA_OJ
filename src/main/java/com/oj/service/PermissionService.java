@@ -10,9 +10,9 @@ import org.springframework.stereotype.Service;
 /**
  * 权限工具: 角色判定与操作人校验的公共逻辑。
  * <p>
- * 角色体系: 站长(OWNER) > 管理员(ADMIN) > 普通用户(USER)。
- * 管理员与站长统称"管理端"(manager), 可管理全站题目与内容;
- * 仅站长可分配/撤销管理员。
+ * 角色体系: 站长(OWNER) > 集训队负责人(ADMIN) > 认证学生(USER)。
+ * 负责人与站长统称"管理端"(manager), 可管理全站题目、比赛、内容与用户;
+ * 仅站长可授予站长角色(负责人只能把用户设为学生/负责人)。
  */
 @Service
 @RequiredArgsConstructor
@@ -22,6 +22,9 @@ public class PermissionService {
 
     /** 查库判定某用户是否为管理端(管理员或站长), 用户不存在返回 false */
     public boolean isManager(Long userId) {
+        if (userId == null) {
+            return false;
+        }
         User user = userMapper.selectById(userId);
         return user != null && isManagerRole(user.getRole());
     }

@@ -59,7 +59,7 @@ public class UserController {
     }
 
     /**
-     * 用户管理分页(仅站长, keyword 模糊匹配用户名/昵称)
+     * 用户管理分页(集训队负责人/站长, keyword 模糊匹配用户名/昵称)
      * GET /api/user/page
      */
     @GetMapping("/page")
@@ -70,7 +70,7 @@ public class UserController {
     }
 
     /**
-     * 修改用户角色(仅站长, 只允许设为普通用户/管理员)
+     * 修改用户角色(集训队负责人/站长, 只允许设为学生/负责人, 站长角色不可动)
      * PUT /api/user/{id}/role
      */
     @PutMapping("/{id}/role")

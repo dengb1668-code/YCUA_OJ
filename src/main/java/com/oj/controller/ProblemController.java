@@ -58,10 +58,13 @@ public class ProblemController {
     /**
      * 获取单道题目详情
      * GET /api/problem/{id}
+     * 未发布题目仅管理端可见; 比赛上下文中传 contestId+contestToken(题目须在该比赛中且已开赛)
      */
     @GetMapping("/{id}")
-    public Result<Problem> detail(@PathVariable Long id) {
-        return Result.ok(problemService.getProblemDetail(id));
+    public Result<Problem> detail(@PathVariable Long id,
+                                  @RequestParam(required = false) Long contestId,
+                                  @RequestParam(required = false) String contestToken) {
+        return Result.ok(problemService.getProblemDetail(id, contestId, contestToken));
     }
 
     /**
@@ -71,6 +74,20 @@ public class ProblemController {
     @PostMapping
     public Result<Long> create(@Valid @RequestBody ProblemCreateRequest request) {
         return Result.ok(problemService.createProblem(request));
+    }
+
+    /** 发布题目。题目创建后默认为草稿，只有负责人可以发布。 */
+    @PutMapping("/{id}/publish")
+    public Result<Void> publish(@PathVariable Long id) {
+        problemService.publishProblem(id);
+        return Result.ok(null);
+    }
+
+    /** 归档题目。归档不会删除历史提交和比赛关联。 */
+    @PutMapping("/{id}/archive")
+    public Result<Void> archive(@PathVariable Long id) {
+        problemService.archiveProblem(id);
+        return Result.ok(null);
     }
 
     /**

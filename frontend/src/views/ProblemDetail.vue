@@ -24,6 +24,15 @@
           >
             管理题目{{ problem.testCaseCount ? ` (${problem.testCaseCount})` : '' }}
           </el-button>
+          <el-button
+            v-if="problem.canManage && problem.publishStatus === 'DRAFT'"
+            size="small"
+            type="primary"
+            plain
+            @click="handlePublish"
+          >
+            发布题目
+          </el-button>
         </div>
       </div>
 
@@ -49,7 +58,7 @@
 
       <!-- 题目标签(洛谷式: 默认隐藏, 手动选择显示, 防止剧透思路) -->
       <div v-if="problem?.tags?.length" class="detail-tags-area">
-        <el-link type="primary" :underline="false" class="tags-toggle" @click="showTags = !showTags">
+        <el-link type="primary" underline="never" class="tags-toggle" @click="showTags = !showTags">
           {{ showTags ? '隐藏标签' : '显示标签' }}
         </el-link>
         <div v-if="showTags" class="detail-tags">
@@ -61,7 +70,7 @@
       <div v-if="contestId" class="contest-banner">
         <el-icon><Trophy /></el-icon>
         <span>比赛提交模式: 本页提交将计入比赛 #{{ contestId }}</span>
-        <el-link type="primary" :underline="false" class="banner-link" @click="router.push(`/contests/${contestId}`)">
+        <el-link type="primary" underline="never" class="banner-link" @click="router.push(`/contests/${contestId}`)">
           返回比赛
         </el-link>
       </div>
@@ -87,10 +96,10 @@
               <div class="sample-head">
                 <span class="sample-name">样例 {{ idx + 1 }}</span>
                 <span class="sample-copy">
-                  <el-link type="primary" :underline="false" @click="copyText(sample.input)">
+                  <el-link type="primary" underline="never" @click="copyText(sample.input)">
                     复制输入
                   </el-link>
-                  <el-link type="primary" :underline="false" @click="copyText(sample.output)">
+                  <el-link type="primary" underline="never" @click="copyText(sample.output)">
                     复制输出
                   </el-link>
                 </span>
@@ -115,7 +124,7 @@
       </div>
 
       <!-- 提交区: 编辑器卡片 -->
-      <div class="section submit-section">
+      <div v-if="userStore.token" class="section submit-section">
         <h3>代码提交</h3>
         <div class="editor-card">
           <div class="editor-head">
@@ -151,7 +160,7 @@
       </div>
 
       <!-- 自定义测试卡片 -->
-      <div class="section custom-test-section">
+      <div v-if="userStore.token" class="section custom-test-section">
         <h3>自定义测试</h3>
         <div class="test-card">
           <div class="sample-label">输入</div>
@@ -241,13 +250,14 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Trophy } from '@element-plus/icons-vue'
 import { VueMonacoEditor } from '@guolao/vue-monaco-editor'
-import { getProblemDetail } from '../api/problem'
+import { getProblemDetail, publishProblem } from '../api/problem'
 import { customTest, getSubmission, submitCode } from '../api/submission'
 import { ratingColor } from '../utils/rating'
 import { renderMarkdown } from '../utils/markdown'
 import { verdictOf, verdictText } from '../utils/verdict'
 import { getContestDetail } from '../api/contest'
 import { getContestToken } from '../utils/contestToken'
+import { userStore } from '../store/user'
 
 const route = useRoute()
 const router = useRouter()
@@ -374,12 +384,25 @@ async function copyText(text) {
 async function fetchDetail() {
   loading.value = true
   try {
-    problem.value = await getProblemDetail(problemId)
+    // 比赛模式下带比赛上下文参数: 草稿题经比赛关联可见
+    const params = contestId.value
+      ? { contestId: contestId.value, contestToken: getContestToken(contestId.value) }
+      : undefined
+    problem.value = await getProblemDetail(problemId, params)
     // 换题后标签恢复默认隐藏
     showTags.value = false
   } catch (e) {
   } finally {
     loading.value = false
+  }
+}
+
+async function handlePublish() {
+  try {
+    await publishProblem(problemId)
+    if (problem.value) problem.value.publishStatus = 'PUBLISHED'
+    ElMessage.success('题目已发布')
+  } catch (e) {
   }
 }
 
@@ -394,6 +417,8 @@ async function setupContestMode() {
   try {
     await getContestDetail(cid, token)
     contestId.value = cid
+    // 比赛模式建立后重新拉取详情(带比赛 token, 草稿题经比赛关联可见)
+    fetchDetail()
   } catch (e) {
     // 无权限或比赛不存在, 按普通模式处理
   }

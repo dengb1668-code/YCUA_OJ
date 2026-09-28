@@ -19,9 +19,10 @@ public interface ProblemService extends IService<Problem> {
     Page<ProblemListVO> pageProblems(long pageNum, long pageSize, String keyword, List<String> tags, Long userId);
 
     /**
-     * 查询单题详情, 不存在时抛出 IllegalArgumentException
+     * 查询单题详情, 不存在时抛出 IllegalArgumentException;
+     * 未发布题目仅管理端或比赛上下文(contestId+contestToken 校验通过)可见
      */
-    Problem getProblemDetail(Long id);
+    Problem getProblemDetail(Long id, Long contestId, String contestToken);
 
     /**
      * 创建题目
@@ -29,6 +30,10 @@ public interface ProblemService extends IService<Problem> {
      * @return 新题目ID
      */
     Long createProblem(ProblemCreateRequest request);
+
+    void publishProblem(Long id);
+
+    void archiveProblem(Long id);
 
     /**
      * 编辑题目题面(仅创建者/管理员/旧题宽松), 无权限或不存在时抛出 IllegalArgumentException

@@ -162,8 +162,8 @@ import { userStore } from '../store/user'
 const stats = ref({})
 
 // 角色展示文案
-const ROLE_LABELS = { OWNER: '站长', ADMIN: '管理员', USER: '普通用户' }
-const roleLabel = computed(() => ROLE_LABELS[userStore.role] ?? '普通用户')
+const ROLE_LABELS = { OWNER: '站长', ADMIN: '集训队负责人', USER: '认证学生' }
+const roleLabel = computed(() => ROLE_LABELS[userStore.role] ?? '认证学生')
 
 onMounted(async () => {
   try {

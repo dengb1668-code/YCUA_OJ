@@ -11,7 +11,8 @@ import lombok.Getter;
 public enum PostType {
 
     DISCUSSION(0, "讨论"),
-    SOLUTION(1, "题解");
+    SOLUTION(1, "题解"),
+    BLOG(2, "博客");
 
     /** 存储到数据库的整数值 */
     @EnumValue

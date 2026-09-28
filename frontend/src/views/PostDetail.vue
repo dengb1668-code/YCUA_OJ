@@ -29,7 +29,7 @@
               <el-link
                 v-if="post.problemId"
                 type="primary"
-                :underline="false"
+                underline="never"
                 class="meta-item"
                 @click="router.push(`/problems/${post.problemId}`)"
               >

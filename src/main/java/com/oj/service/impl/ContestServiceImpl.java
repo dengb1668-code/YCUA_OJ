@@ -141,6 +141,8 @@ public class ContestServiceImpl extends ServiceImpl<ContestMapper, Contest> impl
     @Override
     @Transactional
     public Long create(ContestCreateRequest request) {
+        // 仅管理员/站长可创建比赛
+        permissionService.requireManager();
         if (!request.getEndTime().isAfter(request.getStartTime())) {
             throw new IllegalArgumentException("结束时间必须晚于开始时间");
         }
@@ -537,6 +539,34 @@ public class ContestServiceImpl extends ServiceImpl<ContestMapper, Contest> impl
                 .eq(ContestProblem::getProblemId, problemId));
         if (count == null || count == 0) {
             throw new IllegalArgumentException("题目不在该比赛中");
+        }
+    }
+
+    @Override
+    public boolean canViewProblem(Long contestId, Long problemId, String contestToken) {
+        Contest contest = getById(contestId);
+        if (contest == null) {
+            return false;
+        }
+        if (canManage(contest)) {
+            return true;
+        }
+        // 题目必须在比赛题目集中
+        Long count = contestProblemMapper.selectCount(new LambdaQueryWrapper<ContestProblem>()
+                .eq(ContestProblem::getContestId, contestId)
+                .eq(ContestProblem::getProblemId, problemId));
+        if (count == null || count == 0) {
+            return false;
+        }
+        // 开赛前题目不可见(与比赛详情页题目列表规则一致)
+        if (LocalDateTime.now().isBefore(contest.getStartTime())) {
+            return false;
+        }
+        // 比赛访问 token 必须有效
+        try {
+            return contest.getId().equals(jwtUtil.parseContestToken(contestToken));
+        } catch (Exception e) {
+            return false;
         }
     }
 

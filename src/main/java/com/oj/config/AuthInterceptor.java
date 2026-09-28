@@ -24,6 +24,9 @@ public class AuthInterceptor implements HandlerInterceptor {
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             return true;
         }
+        if (isPublicProblemRead(request)) {
+            return true;
+        }
         String header = request.getHeader("Authorization");
         if (header != null && header.startsWith("Bearer ")) {
             try {
@@ -42,6 +45,18 @@ public class AuthInterceptor implements HandlerInterceptor {
         response.setContentType("application/json;charset=UTF-8");
         response.getWriter().write("{\"code\":401,\"message\":\"未登录或登录已过期\"}");
         return false;
+    }
+
+    /** 访客只允许读取题库和已发布题目的详情，其他 API 仍要求登录。 */
+    private boolean isPublicProblemRead(HttpServletRequest request) {
+        if (!"GET".equalsIgnoreCase(request.getMethod())) {
+            return false;
+        }
+        String path = request.getRequestURI();
+        if ("/api/problem/page".equals(path) || "/api/problem/tags".equals(path)) {
+            return true;
+        }
+        return path.matches("/api/problem/\\d+");
     }
 
     @Override

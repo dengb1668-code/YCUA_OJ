@@ -155,6 +155,9 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         if (request.getType() == PostType.SOLUTION && request.getProblemId() == null) {
             throw new IllegalArgumentException("题解必须关联题目");
         }
+        if (request.getType() == PostType.BLOG && request.getProblemId() != null) {
+            throw new IllegalArgumentException("博客不能关联题目");
+        }
         if (request.getProblemId() != null && problemMapper.selectById(request.getProblemId()) == null) {
             throw new IllegalArgumentException("关联题目不存在: id=" + request.getProblemId());
         }

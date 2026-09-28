@@ -1,9 +1,9 @@
 <template>
   <div class="post-list-panel">
     <div class="page-head">
-      <h2 class="page-title">{{ type === 'SOLUTION' ? '题解' : '讨论区' }}</h2>
+      <h2 class="page-title">{{ typeName }}</h2>
       <el-button type="primary" plain @click="openCreate">
-        发布{{ type === 'SOLUTION' ? '题解' : '帖子' }}
+        发布{{ type === 'DISCUSSION' ? '帖子' : typeName }}
       </el-button>
     </div>
 
@@ -11,14 +11,14 @@
       <el-table v-loading="loading" :data="posts">
         <el-table-column label="标题" min-width="360">
           <template #default="{ row }">
-            <el-link type="primary" :underline="false" class="post-link" @click="router.push(`/post/${row.id}`)">
+            <el-link type="primary" underline="never" class="post-link" @click="router.push(`/post/${row.id}`)">
               {{ row.title }}
             </el-link>
           </template>
         </el-table-column>
         <el-table-column v-if="!problemId" label="关联题目" width="220">
           <template #default="{ row }">
-            <el-link v-if="row.problemId" type="primary" :underline="false" @click="router.push(`/problems/${row.problemId}`)">
+            <el-link v-if="row.problemId" type="primary" underline="never" @click="router.push(`/problems/${row.problemId}`)">
               {{ row.problemTitle }}
             </el-link>
             <span v-else class="muted">—</span>
@@ -56,7 +56,7 @@
     <!-- 发帖弹窗 -->
     <el-dialog
       v-model="createVisible"
-      :title="type === 'SOLUTION' ? '发布题解' : '发布帖子'"
+      :title="`发布${type === 'DISCUSSION' ? '帖子' : typeName}`"
       width="640px"
       align-center
     >
@@ -64,7 +64,7 @@
         <el-form-item label="标题">
           <el-input v-model="createForm.title" maxlength="100" placeholder="请输入标题" />
         </el-form-item>
-        <el-form-item v-if="!problemId" label="关联题目">
+        <el-form-item v-if="!problemId && type !== 'BLOG'" label="关联题目">
           <el-input
             v-model="createForm.problemId"
             placeholder="题目ID(可选, 留空为全局讨论)"
@@ -89,19 +89,24 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { createPost, getPostPage } from '../api/post'
 
 const props = defineProps({
-  /** 'DISCUSSION' | 'SOLUTION' */
+  /** 'DISCUSSION' | 'SOLUTION' | 'BLOG' */
   type: { type: String, required: true },
-  /** 题目ID; null 表示全局讨论区 */
+  /** 题目ID; null 表示全局列表(讨论区/博客) */
   problemId: { type: Number, default: null }
 })
 
 const router = useRouter()
+
+/** 类型显示名: 讨论区/题解/博客 */
+const typeName = computed(() =>
+  ({ SOLUTION: '题解', BLOG: '博客', DISCUSSION: '讨论区' })[props.type] ?? '帖子'
+)
 
 const loading = ref(false)
 const posts = ref([])

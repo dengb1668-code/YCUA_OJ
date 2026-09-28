@@ -21,9 +21,10 @@ export function getProblemTags() {
 
 /**
  * 获取单道题目详情
+ * @param {Object} params 可选 { contestId, contestToken }(比赛上下文, 草稿题经比赛关联可见)
  */
-export function getProblemDetail(id) {
-  return request.get(`/problem/${id}`)
+export function getProblemDetail(id, params) {
+  return request.get(`/problem/${id}`, { params })
 }
 
 /**
@@ -35,8 +36,16 @@ export function createProblem(data) {
   return request.post('/problem', data)
 }
 
+export function publishProblem(id) {
+  return request.put(`/problem/${id}/publish`)
+}
+
+export function archiveProblem(id) {
+  return request.put(`/problem/${id}/archive`)
+}
+
 /**
- * 编辑题目题面(仅创建者/管理员)
+ * 编辑题目题面(仅创建者/负责人)
  */
 export function updateProblem(id, data) {
   return request.put(`/problem/${id}`, data)

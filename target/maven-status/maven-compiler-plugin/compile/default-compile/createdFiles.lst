@@ -3,6 +3,7 @@ com\oj\mapper\ReplyMapper.class
 com\oj\service\impl\SubmissionServiceImpl.class
 com\oj\dto\PostUpdateRequest.class
 com\oj\entity\Problem.class
+com\oj\enums\ProblemPublishStatus.class
 com\oj\common\ProblemTags.class
 com\oj\mapper\UserMapper.class
 com\oj\judge\JudgeWorker.class
