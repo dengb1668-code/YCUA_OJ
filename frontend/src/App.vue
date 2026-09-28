@@ -8,13 +8,15 @@
             <span class="logo-mark">&lt;/&gt;</span>
             <span class="logo-text">YCUAoj</span>
           </router-link>
-          <nav v-if="userStore.token" class="header-nav">
+          <nav class="header-nav">
             <router-link to="/problems" class="nav-link">题库</router-link>
-            <router-link to="/contests" class="nav-link">比赛</router-link>
-            <router-link to="/submissions" class="nav-link">提交记录</router-link>
-            <router-link to="/discussion" class="nav-link">讨论区</router-link>
-            <router-link to="/blogs" class="nav-link">博客</router-link>
-            <router-link to="/profile" class="nav-link">个人主页</router-link>
+            <template v-if="userStore.token">
+              <router-link to="/contests" class="nav-link">比赛</router-link>
+              <router-link to="/submissions" class="nav-link">提交记录</router-link>
+              <router-link to="/discussion" class="nav-link">讨论区</router-link>
+              <router-link to="/blogs" class="nav-link">博客</router-link>
+              <router-link to="/profile" class="nav-link">个人主页</router-link>
+            </template>
           </nav>
         </div>
         <div class="header-right">
@@ -27,7 +29,6 @@
             <el-icon :size="16"><Sunny v-if="isDark" /><Moon v-else /></el-icon>
           </button>
           <button
-            v-if="userStore.token"
             class="icon-btn menu-btn"
             title="菜单"
             aria-label="菜单"
@@ -35,6 +36,10 @@
           >
             <el-icon :size="17"><Menu /></el-icon>
           </button>
+          <template v-if="!userStore.token">
+            <router-link to="/login" class="auth-link">登录</router-link>
+            <router-link to="/register" class="auth-link primary">注册</router-link>
+          </template>
           <el-dropdown v-if="userStore.token" trigger="click" @command="handleCommand">
             <span class="user-trigger">
               <span class="avatar">{{ (userStore.username || '?')[0].toUpperCase() }}</span>
@@ -67,13 +72,19 @@
 
       <!-- 移动端导航抽屉 -->
       <transition name="drop">
-        <nav v-if="mobileOpen && userStore.token" class="mobile-nav">
+        <nav v-if="mobileOpen" class="mobile-nav">
           <router-link to="/problems" class="nav-link" @click="mobileOpen = false">题库</router-link>
-          <router-link to="/contests" class="nav-link" @click="mobileOpen = false">比赛</router-link>
-          <router-link to="/submissions" class="nav-link" @click="mobileOpen = false">提交记录</router-link>
-          <router-link to="/discussion" class="nav-link" @click="mobileOpen = false">讨论区</router-link>
-          <router-link to="/blogs" class="nav-link" @click="mobileOpen = false">博客</router-link>
-          <router-link to="/profile" class="nav-link" @click="mobileOpen = false">个人主页</router-link>
+          <template v-if="userStore.token">
+            <router-link to="/contests" class="nav-link" @click="mobileOpen = false">比赛</router-link>
+            <router-link to="/submissions" class="nav-link" @click="mobileOpen = false">提交记录</router-link>
+            <router-link to="/discussion" class="nav-link" @click="mobileOpen = false">讨论区</router-link>
+            <router-link to="/blogs" class="nav-link" @click="mobileOpen = false">博客</router-link>
+            <router-link to="/profile" class="nav-link" @click="mobileOpen = false">个人主页</router-link>
+          </template>
+          <template v-else>
+            <router-link to="/login" class="nav-link" @click="mobileOpen = false">登录</router-link>
+            <router-link to="/register" class="nav-link" @click="mobileOpen = false">注册</router-link>
+          </template>
         </nav>
       </transition>
     </header>
@@ -257,6 +268,31 @@ onMounted(updateThemeColor)
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
+}
+
+/* ---- 游客登录/注册入口 ---- */
+.app .auth-link {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-2);
+  padding: 6px 12px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.app .auth-link:hover {
+  color: var(--text);
+  background: var(--bg-hover);
+  text-decoration: none;
+}
+
+.app .auth-link.primary {
+  color: #fff;
+  background: var(--brand);
+}
+
+.app .auth-link.primary:hover {
+  opacity: 0.9;
 }
 
 .app .icon-btn {

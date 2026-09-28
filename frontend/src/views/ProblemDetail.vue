@@ -159,6 +159,18 @@
         </div>
       </div>
 
+      <!-- 游客: 提交区位置提示登录 -->
+      <div v-else class="section guest-submit-hint">
+        <h3>代码提交</h3>
+        <div class="guest-hint-card">
+          <p>游客模式可以查看题目, 登录后即可提交代码、参与讨论和比赛</p>
+          <div class="guest-hint-actions">
+            <el-button type="primary" @click="router.push('/login')">去登录</el-button>
+            <el-button plain @click="router.push('/register')">注册账号</el-button>
+          </div>
+        </div>
+      </div>
+
       <!-- 自定义测试卡片 -->
       <div v-if="userStore.token" class="section custom-test-section">
         <h3>自定义测试</h3>
@@ -542,6 +554,27 @@ onMounted(() => {
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
+}
+
+/* 游客提交区提示 */
+.guest-hint-card {
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 28px 20px;
+  text-align: center;
+  color: var(--text-2);
+  background: var(--bg-soft);
+}
+
+.guest-hint-card p {
+  margin: 0 0 16px;
+  font-size: 14px;
+}
+
+.guest-hint-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
 }
 
 .problem-title {
